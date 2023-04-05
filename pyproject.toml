@@ -1,38 +1,83 @@
 [project]
-name = "template-python"
+name = "pyshvtree"
 version = "0.0.0"
-description = "Project Template Python"
-readme = "README.md"
-requires-python = ">=3.8"
-dependencies = []
+description = "Python SHV Tree"
+readme = "README.rst"
+requires-python = ">=3.10"
+dependencies = [
+  "pyshv",
+  "ruamel.yaml",
+  "asyncinotify",
+]
+
+[project.urls]
+"Homepage" = "https://gitlab.com/elektroline-predator/pyshvtree"
+"Bug Tracker" = "https://gitlab.com/elektroline-predator/pyshvtree/-/issues"
 
 [project.optional-dependencies]
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx-multiversion",
+  "myst-parser",
+]
 test = [
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+]
+lint = [
   "black",
   "isort",
-  "mypy",
   "pydocstyle",
   "pylint",
-  "pytest",
-  "pytest-cov",
+  "mypy",
 ]
 
 [project.scripts]
-foo = "foo.__main__:main"
+shvtree-check = "shvtree.check.__main__:main"
+shvtree-dummy = "shvtree.device.__main__:main"
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+exclude = ["docs", "tests*"]
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+omit = ["tests/*"]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if typing.TYPE_CHECKING:"
+]
+
 [tool.isort]
 profile = 'black'
 
-[tool.pylint.format]
+[tool.pylint.main]
 recursive = "y"
-ignore = "tests"
-# C0104: prevent usage of module name in documentation (seems unreasonable)
-# W1514: requires encoding to be set for open but default is to use system's
-# encoding which is way more reasonable than introducing some assumptions.
-disable = "C0104,W1514"
+ignore = ["tests", "docs"]
+fail-under = 9.5
+[tool.pylint.format]
+disable = [
+  # Exception can be safely caught because there is BaseException for unsafe
+  # ones (such as SystemExit) and there are reasons to catch all exceptions.
+  "W0718",
+  # Prevent usage of module name in documentation (seems unreasonable)
+  "C0104",
+  # We have pydocstyle for the following ones
+  "C0103", "C0114", "C0115", "C0116",
+]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html
-max-line-length = "88"
+max-line-length = 88
+
+[tool.mypy]
+python_version = "3.10"

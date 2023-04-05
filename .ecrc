@@ -1,0 +1,6 @@
+{
+  "SpacesAftertabs": true,
+  "Disable": {
+    "MaxLineLength": true
+  }
+}

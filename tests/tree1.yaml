@@ -1,0 +1,156 @@
+# Basic pretty much complete tree for some device
+---
+types:
+
+  # TODO possibly make this builtin
+  getLogArgs:
+    type: Map
+    fields:
+      since: getLogArgsSince
+      until: getLogArgsUntil
+      withSnapshot: Bool
+      withPathsDict: Bool
+      recordCountLimit: Int
+  getLogArgsSince:
+    - DateTime
+    - Null
+    - constStringLast
+  constStringLast:
+    type: Constant
+    value: "last"
+  getLogArgsUntil:
+    - DateTime
+    - Null
+
+
+  status:
+    type: Enum
+    values:
+      - ok
+      - warning
+      - error
+
+  errors:
+    type: Bitfield
+    values:
+      - outOfRange
+      - lowPower
+
+  timeZone:
+    type: Map
+    fields:
+      offset: Int # Time zone offset outside of day-time savings
+      dtoffset: Int # Time zone offset during the date-time savings
+      dtstart: Int # Start of the day-time savings in seconds since the start of the year (Febuary 29 is counted in leap years)
+      dtend: Int # End of the day-time savings in seconds since the start of the year (Febuary 29 is counted in leap year)
+
+  version:
+    type: Map
+    fields:
+      major: Int
+      minor: Int
+      fixup: Int
+      hash: String
+      dev: Bool
+      dirty: Bool
+
+  propEnum:
+    type: Enum
+    values:
+      - boolean
+      - integer
+      - uinteger
+      - string
+      - dateTime
+  propTuple:
+    type: Tuple
+    enum: propEnum
+    fields: &fprops
+      - Bool
+      - Int
+      - UInt
+      - String
+      - DateTime
+  propMap:
+    type: Map
+    fields:
+      boolean: Bool
+      integer: Int
+      uinteger: UInt
+      string: String
+      dateTime: DateTime
+  propIMap:
+    type: IMap
+    enum: propEnum
+    fields: *fprops
+
+
+nodes:
+
+  .app:
+    nodes:
+      shvjournal:
+        methods:
+          getLog:
+            args: getLogArgs
+            flags: [large_result_hint]
+            returns: Any
+
+  serialNumber:
+    property: Int
+    readonly: true
+    description: Serial number of the board
+
+  hwVersion:
+    property: String
+    readonly: true
+
+  status:
+    property: status
+    readonly: true
+
+  errors:
+    property: errors
+
+  utcTime:
+    property: DateTime
+
+  localTime:
+    property: DateTime
+    readonly: true
+
+  timeZone:
+    property: timeZone
+
+  version:
+    property: version
+    readonly: true
+
+
+  properties:
+    nodes:
+
+      boolean:
+        property: Bool
+      integer:
+        property: Int
+      uinteger:
+        property: UInt
+      string:
+        property: String
+      dateTime:
+        property: DateTime
+      tuple:
+        property: propTuple
+      map:
+        property: propMap
+      imap:
+        property: propIMap
+
+    methods:
+      reset: {}
+
+  counter:
+    property: Int
+    readonly: true
+    signal: true
