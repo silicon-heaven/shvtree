@@ -42,7 +42,7 @@ class SHVTreeDummyDevice(SHVTreeDevice):
 
     def _get_method_impl(self, args: dict[str, typing.Any]) -> typing.Callable | None:
         res = super()._get_method_impl(args)
-        if res is None and args["method"] is not None:
+        if res is None and args.get("method", None) is not None:
             return self._default_method
         return res
 
