@@ -1,4 +1,5 @@
 stages:
+  - devenv
   - test
   - lint
   - style
@@ -24,15 +25,27 @@ variables:
   before_script:
     - echo "experimental-features = nix-command flakes" >>/etc/nix/nix.conf
     - echo "extra-substituters = file://$PWD/.nix-cache" >>/etc/nix/nix.conf
+    - echo "extra-trusted-substituters = file://$PWD/.nix-cache" >>/etc/nix/nix.conf
     - find /nix/store -maxdepth 1 ! -name \*.drv | sort >/nix/.before
   after_script:
     - find /nix/store -maxdepth 1 ! -name \*.drv | sort >/nix/.after
     - comm -13 /nix/.before /nix/.after | xargs nix copy --to "file://$PWD/.nix-cache"
 
+## Development environment #####################################################
+devenv:
+  stage: devenv
+  extends: .nix
+  script:
+    - nix develop -c true
+
 ## Test stage ##################################################################
-tests:
+.test:
   stage: test
   extends: .nix
+  needs: [devenv]
+
+tests:
+  extends: .test
   script:
     - nix develop -c pytest -v --junitxml=report.xml --cov=. --cov-report xml:coverage.xml --cov-report html:coverage --cov-report term
   artifacts:
@@ -46,14 +59,12 @@ tests:
   coverage: '/^TOTAL.*\s+([^\s]+)%$/'
 
 nix-build:
-  stage: test
-  extends: .nix
+  extends: .test
   script:
     - nix build
 
 nix-check:
-  stage: test
-  extends: .nix
+  extends: .test
   script:
     - nix flake check
 
@@ -65,7 +76,7 @@ include:
 .lint:
   stage: lint
   extends: .nix
-  needs: []
+  needs: [devenv]
 
 pylint:
   extends: .lint
@@ -82,7 +93,7 @@ mypy:
 .style:
   stage: style
   extends: .nix
-  needs: []
+  needs: [devenv]
   allow_failure: true
 
 black:
@@ -141,7 +152,7 @@ pages:
   extends: .nix
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-  needs: []
+  needs: [devenv]
   script:
     - git fetch
     - nix develop -c sphinx-multiversion docs public
