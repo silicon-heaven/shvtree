@@ -5,6 +5,7 @@ import shv
 
 from . import namedset
 from .types import SHVTypeBase, shvNull
+from .types_builtins import shvGetParam
 
 
 class SHVMethod(namedset.Named):
@@ -57,7 +58,7 @@ class SHVMethod(namedset.Named):
     ) -> SHVMethod:
         """Initialize new method that is standard getter."""
         nflags = flags | shv.RpcMethodFlags.GETTER
-        return cls("get", shvNull, dtype, nflags, access_level, description)
+        return cls("get", shvGetParam, dtype, nflags, access_level, description)
 
     @classmethod
     def new_setter(
@@ -92,7 +93,7 @@ class SHVMethod(namedset.Named):
     def signature(self) -> shv.RpcMethodSignature:
         """SHV RPC signature for this method."""
         return self.__method_signature_map[
-            (self.args is not None, self.returns is not None)
+            (self.args not in (None, shvNull), self.returns not in (None, shvNull))
         ]
 
     @property

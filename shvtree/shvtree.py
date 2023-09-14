@@ -1,7 +1,8 @@
 """Implementation of the top level SHV tree class."""
 from . import namedset
 from .node import SHVNode
-from .types import SHVTypeBase, shvBuiltins
+from .types import SHVTypeBase
+from .types_builtins import shvBuiltins
 
 
 class SHVTree(SHVNode):

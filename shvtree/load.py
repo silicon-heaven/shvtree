@@ -29,9 +29,9 @@ from .types import (
     SHVTypeString,
     SHVTypeTuple,
     shvAny,
-    shvBuiltins,
     shvNull,
 )
+from .types_builtins import shvBuiltins
 
 
 def load(path: str | pathlib.Path) -> SHVTree:

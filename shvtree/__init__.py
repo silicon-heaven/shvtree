@@ -20,6 +20,9 @@ from .types import (
     SHVTypeOneOf,
     SHVTypeString,
     SHVTypeTuple,
+    shvNull,
+)
+from .types_builtins import (
     shvAny,
     shvBlob,
     shvBool,
@@ -32,7 +35,6 @@ from .types import (
     shvInt32,
     shvInt64,
     shvList,
-    shvNull,
     shvString,
     shvUInt,
     shvUInt8,
