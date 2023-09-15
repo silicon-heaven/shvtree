@@ -13,7 +13,7 @@ def fixture_port(unused_tcp_port_factory):
 def fixture_url(port):
     """Provides RpcUrl for connecting to the broker."""
     return RpcUrl(
-        host="localhost",
+        location="localhost",
         port=port,
         username="admin",
         password="admin!123",
