@@ -19,7 +19,12 @@
       pypy2nix_map = {
         "ruamel.yaml" = "ruamel-yaml";
       };
-      pypi2nix = list: list2attr (map (n: pypy2nix_map.${n} or n) list);
+      pypi2nix = list:
+        list2attr (map (n: let
+          nn = elemAt (match "([^ ]*).*" n) 0;
+        in
+          pypy2nix_map.${nn} or nn)
+        list);
 
       requires = pypi2nix pyproject.project.dependencies;
       requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;

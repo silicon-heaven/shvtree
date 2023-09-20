@@ -5,7 +5,7 @@ description = "Python SHV Tree"
 readme = "README.rst"
 requires-python = ">=3.10"
 dependencies = [
-  "pyshv",
+  "pyshv >= 0.3.0",
   "ruamel.yaml",
   "asyncinotify",
 ]
