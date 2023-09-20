@@ -1,6 +1,6 @@
-=============================
-Silicon Heaven Tree in Python
-=============================
+===================
+Silicon Heaven Tree
+===================
 
 This provides common parser and validator for Silicon Heaven tree
 representation. It is formed of nodes forming path and methods associated with
