@@ -43,9 +43,9 @@ class SHVTreeDevice(shv.SimpleClient):
 
     APP_NAME = "pyshvtree"
 
-    def _ls(self, path: str) -> typing.Iterator[tuple[str, bool | None]]:
+    def _ls(self, path: str) -> typing.Iterator[str]:
         if self.tree is not None and (node := self.tree.get_node(path)) is not None:
-            yield from ((n.name, bool(n.nodes)) for n in node.nodes.values())
+            yield from (n.name for n in node.nodes.values())
         else:
             yield from super()._ls(path)
 

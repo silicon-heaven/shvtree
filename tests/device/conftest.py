@@ -26,10 +26,8 @@ def fixture_broker_config(url):
     """Configuration for the broker."""
     config = RpcBrokerConfig()
     config.listen = {"test": url}
-    rule_su = RpcBrokerConfig.Rule("su")
-    config.add_rule(rule_su)
     role_admin = RpcBrokerConfig.Role(
-        "admin", RpcMethodAccess.ADMIN, frozenset({rule_su})
+        "admin", RpcMethodAccess.DEVEL, frozenset({RpcBrokerConfig.Method()})
     )
     config.add_role(role_admin)
     user_admin = RpcBrokerConfig.User(

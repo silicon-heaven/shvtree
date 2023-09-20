@@ -1,7 +1,7 @@
 {
   description = "Python SHV Tree";
   inputs = {
-    pyshv.url = "git+https://gitlab.com/elektroline-predator/pyshv.git";
+    pyshv.url = "git+https://gitlab.com/elektroline-predator/pyshv.git?ref=shv3";
   };
 
   outputs = {

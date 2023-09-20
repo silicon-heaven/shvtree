@@ -89,18 +89,6 @@ async def test_ls(device, client, path, expected):
     assert await client.ls(path) == expected
 
 
-@pytest.mark.parametrize(
-    "path,expected",
-    list(
-        (f"test/{path}", {n.name: bool(n.nodes) for n in node.nodes.values()})
-        for path, node in iter(tree1)
-    ),
-)
-async def test_ls_with_children(device, client, path, expected):
-    """Check that we can list all nodes in the tree and correctly report children."""
-    assert await client.ls_with_children(path) == expected
-
-
 async def test_ls_invalid(device, client):
     """Check that we correctly handle ls of invalid path."""
     with pytest.raises(shv.RpcMethodNotFoundError):
@@ -108,34 +96,12 @@ async def test_ls_invalid(device, client):
 
 
 async def test_empty_ls(empty_device, client):
-    assert await client.ls("empty") == []
+    assert await client.ls("empty") == [".app"]
 
 
 async def test_empty_ls_invalid(empty_device, client):
     with pytest.raises(shv.RpcMethodNotFoundError):
         await client.ls("empty/missing")
-
-
-@pytest.mark.parametrize(
-    "path,expected",
-    list(
-        (f"test/{path}", ["dir", "ls"] + list(m.name for m in node.methods.values()))
-        for path, node in iter(tree1)
-    ),
-)
-async def test_dir(device, client, path, expected):
-    """Check that we can list all methods in the tree."""
-    assert await client.dir(path) == expected
-
-
-async def test_dir_invalid(device, client):
-    """Check that we correctly handle ls of invalid path."""
-    with pytest.raises(shv.RpcMethodNotFoundError):
-        await client.dir("/test/properties/missing")
-
-
-async def test_empty_dir(empty_device, client):
-    assert await client.dir("empty") == ["dir", "ls", "appName", "appVersion", "echo"]
 
 
 @pytest.mark.parametrize(
@@ -155,14 +121,61 @@ async def test_empty_dir(empty_device, client):
                     access=RpcMethodAccess.BROWSE,
                 ),
             ]
+            + (
+                [
+                    RpcMethodDesc.getter(
+                        "shvVersionMajor",
+                        RpcMethodAccess.BROWSE,
+                    ),
+                    RpcMethodDesc.getter(
+                        "shvVersionMinor",
+                        RpcMethodAccess.BROWSE,
+                    ),
+                    RpcMethodDesc.getter(
+                        "appName",
+                        RpcMethodAccess.BROWSE,
+                    ),
+                    RpcMethodDesc.getter(
+                        "appVersion",
+                        RpcMethodAccess.BROWSE,
+                    ),
+                    RpcMethodDesc(
+                        "ping",
+                        access=RpcMethodAccess.BROWSE,
+                    ),
+                ]
+                if path == ".app"
+                else []
+            )
             + list(m.descriptor for m in node.methods.values()),
         )
         for path, node in iter(tree1)
     ),
 )
-async def test_dir_details(device, client, path, expected):
+async def test_dir(device, client, path, expected):
     """Check that we can list all methods with details in the tree."""
-    assert await client.dir_details(path) == expected
+    assert await client.dir(path) == expected
+
+
+async def test_dir_invalid(device, client):
+    """Check that we correctly handle ls of invalid path."""
+    with pytest.raises(shv.RpcMethodNotFoundError):
+        await client.dir("/test/properties/missing")
+
+
+async def test_empty_dir(empty_device, client):
+    assert await client.dir("empty") == [
+        RpcMethodDesc(
+            "dir",
+            RpcMethodSignature.RET_PARAM,
+            access=RpcMethodAccess.BROWSE,
+        ),
+        RpcMethodDesc(
+            "ls",
+            RpcMethodSignature.RET_PARAM,
+            access=RpcMethodAccess.BROWSE,
+        ),
+    ]
 
 
 @pytest.mark.parametrize(

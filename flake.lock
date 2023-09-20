@@ -39,11 +39,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1681202837,
-        "narHash": "sha256-H+Rh19JDwRtpVPAWp64F+rlEtxUWBAQW28eAi3SRSzg=",
+        "lastModified": 1694529238,
+        "narHash": "sha256-zsNZZGTGnMOf9YpHKJqMSsa0dXbfmxeoJ7xHlrt+xmY=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "cfacdce06f30d2b68473a46042957675eebb3401",
+        "rev": "ff7b65b44d01cf9ba6a71320833626af21126384",
         "type": "github"
       },
       "original": {
@@ -51,7 +51,42 @@
         "type": "indirect"
       }
     },
+    "libshv": {
+      "inputs": {
+        "flake-utils": "flake-utils_3",
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1695376977,
+        "narHash": "sha256-EX5xv33ck0hIhy/0TNmusNV9iiSxbDWE+mWEiPYNSYs=",
+        "ref": "refs/heads/master",
+        "rev": "94b6fe9c8acc091e16a4fa8b189b6d437ff97fbb",
+        "revCount": 2254,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/silicon-heaven/libshv.git"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/silicon-heaven/libshv.git"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1695806987,
+        "narHash": "sha256-fX5kGs66NZIxCMcpAGIpxuftajHL8Hil1vjHmjjl118=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f3dab3509afca932f3f4fd0908957709bb1c1f57",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1694948089,
         "narHash": "sha256-d2B282GmQ9o8klc22/Rbbbj6r99EnELQpOQjWMyv0rU=",
@@ -65,7 +100,7 @@
         "type": "indirect"
       }
     },
-    "nixpkgs_2": {
+    "nixpkgs_3": {
       "locked": {
         "lastModified": 1694032533,
         "narHash": "sha256-I8cfCV/4JNJJ8KHOTxTU1EphKT8ARSb4s9pq99prYV0=",
@@ -79,36 +114,23 @@
         "type": "indirect"
       }
     },
-    "nixpkgs_3": {
-      "locked": {
-        "lastModified": 1682109806,
-        "narHash": "sha256-d9g7RKNShMLboTWwukM+RObDWWpHKaqTYXB48clBWXI=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "2362848adf8def2866fabbffc50462e929d7fffb",
-        "type": "github"
-      },
-      "original": {
-        "id": "nixpkgs",
-        "type": "indirect"
-      }
-    },
     "pyshv": {
       "inputs": {
         "flake-utils": "flake-utils_2",
-        "nixpkgs": "nixpkgs_2",
-        "shvapp": "shvapp"
+        "libshv": "libshv",
+        "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1695123324,
-        "narHash": "sha256-bDuWH8wk/dWRJUEycrsA7w34JdlZ8rZv9+HFH+zN5zA=",
-        "ref": "refs/heads/master",
-        "rev": "6994594b480f8c45279748f201b31426bc049dfe",
-        "revCount": 100,
+        "lastModified": 1695558218,
+        "narHash": "sha256-jaSN2+WeSS775DJOG4UhfJ7nbP7l0O4OIaji0m75Wqc=",
+        "ref": "shv3",
+        "rev": "20c47edbd777c2c881f8142308df8da72611f497",
+        "revCount": 104,
         "type": "git",
         "url": "https://gitlab.com/elektroline-predator/pyshv.git"
       },
       "original": {
+        "ref": "shv3",
         "type": "git",
         "url": "https://gitlab.com/elektroline-predator/pyshv.git"
       }
@@ -118,27 +140,6 @@
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "pyshv": "pyshv"
-      }
-    },
-    "shvapp": {
-      "inputs": {
-        "flake-utils": "flake-utils_3",
-        "nixpkgs": "nixpkgs_3"
-      },
-      "locked": {
-        "lastModified": 1691081147,
-        "narHash": "sha256-K19rIrLxuB5xVy/ZEbNHeHnPapyyeMvH9bOv3pGuvn8=",
-        "ref": "refs/heads/master",
-        "rev": "e3154552a55d59be7d5c2426b92cd758e088444e",
-        "revCount": 2096,
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/silicon-heaven/shvapp.git"
-      },
-      "original": {
-        "submodules": true,
-        "type": "git",
-        "url": "https://github.com/silicon-heaven/shvapp.git"
       }
     },
     "systems": {
