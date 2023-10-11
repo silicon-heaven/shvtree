@@ -64,9 +64,17 @@ class SHVTypeAny(SHVTypeBase):
             or isinstance(
                 value, (int, float, decimal.Decimal, bytes, str, datetime.datetime)
             )
-            or (isinstance(value, list) and all(self.validate(v) for v in value))
             or (
-                isinstance(value, dict) and all(self.validate(v) for v in value.items())
+                isinstance(value, collections.abc.Sequence)
+                and all(self.validate(v) for v in value)
+            )
+            or (
+                isinstance(value, collections.abc.Mapping)
+                and (
+                    all(isinstance(k, int) for k in value)
+                    or all(isinstance(k, str) for k in value)
+                )
+                and all(self.validate(v) for v in value.values())
             )
         )
 
