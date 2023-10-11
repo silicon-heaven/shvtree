@@ -1,4 +1,5 @@
 import pytest
+import asyncio
 from shv import RpcLoginType, RpcMethodAccess, RpcUrl, ValueClient
 from shv.broker import RpcBroker, RpcBrokerConfig
 
@@ -38,11 +39,10 @@ def fixture_broker_config(url):
 
 
 @pytest.fixture(name="broker")
-async def fixture_broker(event_loop, broker_config):
-    """Provides running RpcBroker."""
+async def fixture_broker(broker_config):
+    """Provide running RpcBroker."""
     broker = RpcBroker(broker_config)
     await broker.start_serving()
-    event_loop.create_task(broker.serve_forever())
     yield broker
     await broker.terminate()
 
