@@ -67,10 +67,10 @@ Methods have to be associated with some node in the tree and thus defined in
 
 The supported values describing a method are:
 
-args
+param
   Data type that is expected to be passed to the method when called. The default
   one, if not specified, is ``shvNull`` which is in SHV alias for no arguments.
-returns
+result
   Data type that is expected to be returned by this method when called. The
   default, if not specified, is ``shvNull``.
 access

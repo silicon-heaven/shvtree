@@ -72,12 +72,12 @@ Method implementation can have from zero to all of these parameters:
   call. The access level is provided for information or if you implement method
   that allows some argument combinations only to some access levels (although
   this is discouraged and two method should defined instead for this purpose).
-* ``params`` (:data:`shv.SHVType`) are parameters passed to the method by
+* ``param`` (:data:`shv.SHVType`) are parameters passed to the method by
   caller.
 * ``signals`` (:class:`shvtree.device.SHVTreeDevice.Signals`) is class that
   allows simple access to the signals of the node associated with this method.
   You only need to know signal method name (that is commonly ``chng``) and call
-  it: ``await signals.chng(params)``.
+  it: ``await signals.chng(param)``.
 
 Method implementations are not required to accept all these methods as Python's
 inspect is used to call it only with parameters it expects.
@@ -97,7 +97,7 @@ The full typed definition:
        method_path: str,
        method: shvtree.SHVTree,
        access_level: shv.RpcMethodAccess,
-       params: shv.SHVType,
+       param: shv.SHVType,
        signals: shvtree.device.SHVTreeDevice.Signals,
    ) -> shv.SHVType:
 

@@ -92,9 +92,9 @@ nodes:
       shvjournal:
         methods:
           getLog:
-            args: getLogArgs
+            param: getLogArgs
+            result: Any
             flags: [large_result_hint]
-            returns: Any
 
   serialNumber:
     property: Int

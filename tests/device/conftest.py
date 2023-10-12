@@ -1,5 +1,6 @@
-import pytest
 import asyncio
+
+import pytest
 from shv import RpcLoginType, RpcMethodAccess, RpcUrl, ValueClient
 from shv.broker import RpcBroker, RpcBrokerConfig
 

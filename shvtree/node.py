@@ -96,9 +96,9 @@ class SHVNode(namedset.Named):
         """
         res = "get" in self.methods
         if readonly is not None:
-            res = res and ("set" not in self.methods is readonly)
+            res = res and (("set" not in self.methods) is readonly)
         if signal is not None:
-            res = res and ("chng" in self.methods is signal)
+            res = res and (("chng" in self.methods) is signal)
         return res
 
     def get_node(self, path: str) -> None | SHVNode:

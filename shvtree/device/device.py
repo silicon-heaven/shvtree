@@ -24,8 +24,8 @@ class SHVTreeDevice(shv.SimpleClient):
     Implementation methods can have any of these arguments with exactly these
     names:
 
-    * ``params``: (:const:`shv.SHVType`) Parameters passed to the method.
-    * ``access_level``: (:class:`shv.RpcMethodAccess`) Parameters passed to the method.
+    * ``param``: (:const:`shv.SHVType`) Parameters passed to the method.
+    * ``access``: (:class:`shv.RpcMethodAccess`) Parameters passed to the method.
     * ``node``: (:class:`shvtree.SHVNode`) The SHV node this method is associated with.
     * ``method``: (:class:`shvtree.SHVMethod`) The SHV method representation of
       this method.
@@ -56,22 +56,22 @@ class SHVTreeDevice(shv.SimpleClient):
                 yield m.descriptor
 
     async def _method_call(
-        self, path: str, method: str, access: shv.RpcMethodAccess, params: shv.SHVType
+        self, path: str, method: str, access: shv.RpcMethodAccess, param: shv.SHVType
     ) -> shv.SHVType:
         args = {
             "path": path,
             "node_name": path.split("/")[-1],
             "method_name": method,
             "method_path": f"{path}:{method}",
-            "access_level": access,
-            "params": params,
+            "access": access,
+            "param": param,
         }
         impl = self._get_method_impl(args)
         if impl is None:
-            return await super()._method_call(path, method, access, params)
-        impl_params = inspect.signature(impl).parameters
+            return await super()._method_call(path, method, access, param)
+        impl_param = inspect.signature(impl).parameters
         await self._pre_call(args)
-        res = impl(**{key: value for key, value in args.items() if key in impl_params})
+        res = impl(**{key: value for key, value in args.items() if key in impl_param})
         if asyncio.iscoroutine(res):
             res = await res
         return await self._post_call(args, res)
@@ -86,7 +86,7 @@ class SHVTreeDevice(shv.SimpleClient):
 
         :param args: Arguments available to the method implementation.
         """
-        if not args["method"].args.validate(args["params"]):
+        if not args["method"].param.validate(args["param"]):
             raise shv.RpcInvalidParamsError("Invalid parameters were provided")
 
     async def _post_call(
@@ -106,7 +106,7 @@ class SHVTreeDevice(shv.SimpleClient):
         :param result: Result provided by method.
         :return: Result that is sent as response to the request.
         """
-        if not args["method"].returns.validate(result):
+        if not args["method"].result.validate(result):
             raise shv.RpcMethodCallExceptionError(
                 f"Implementation produced result of invalid type: {str(result)}."
             )
@@ -139,7 +139,7 @@ class SHVTreeDevice(shv.SimpleClient):
         if node is None:
             return None
         method = node.methods.get(method_name, None)
-        if method is None or method.access_level > args["access_level"]:
+        if method is None or method.access > args["access"]:
             return None
         signals = self.Signals(self.client, path, node)
         args.update({"node": node, "method": method, "signals": signals})
@@ -186,7 +186,7 @@ class SHVTreeDevice(shv.SimpleClient):
 
             async def func(value: shv.SHVType) -> None:
                 assert method is not None
-                if not method.returns.validate(value):
+                if not method.result.validate(value):
                     raise RuntimeError("Attempting to send signal with invalid value.")
                 await self.__client.send(
                     shv.RpcMessage.signal(self.__path, attr, value)

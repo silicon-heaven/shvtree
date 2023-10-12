@@ -46,8 +46,8 @@ class SHVTreeDummyDevice(SHVTreeDevice):
             return self._default_method
         return res
 
-    def _default_method(self, params: shv.SHVType, method: SHVMethod) -> shv.SHVType:
-        return self._dummy_value(method.returns)
+    def _default_method(self, param: shv.SHVType, method: SHVMethod) -> shv.SHVType:
+        return self._dummy_value(method.result)
 
     @classmethod
     def _dummy_value(cls, shvtp: SHVTypeBase) -> shv.SHVType:
@@ -76,8 +76,12 @@ class SHVTreeDummyDevice(SHVTreeDevice):
             return []
         if isinstance(shvtp, SHVTypeTuple):
             return [cls._dummy_value(v) for v in shvtp]
-        if isinstance(shvtp, (SHVTypeMap, SHVTypeIMap)):
+        if isinstance(shvtp, SHVTypeMap):
             return {k: cls._dummy_value(v) for k, v in shvtp.items()}
+        if isinstance(shvtp, SHVTypeIMap):
+            return {
+                k: cls._dummy_value(v) for k, v in shvtp.items() if isinstance(k, int)
+            }
         if isinstance(shvtp, SHVTypeAlias):
             return cls._dummy_value(shvtp.type)
         if isinstance(shvtp, SHVTypeOneOf):
@@ -90,8 +94,8 @@ class SHVTreeDummyDevice(SHVTreeDevice):
         return 0xFF42
 
     def _status_get(self, method: SHVMethod):
-        assert isinstance(method.returns, SHVTypeEnum)
-        return method.returns["ok"]
+        assert isinstance(method.result, SHVTypeEnum)
+        return method.result["ok"]
 
     def _errors_get(self):
         return 0

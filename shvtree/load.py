@@ -461,8 +461,8 @@ def load_methods(
         # Note: the None here supports empty node definition
         dmethod = dict(dmethod) if dmethod is not None else {}
 
-        args = _get_type(types, dmethod.pop("args", None))
-        returns = _get_type(types, dmethod.pop("returns", None))
+        param = _get_type(types, dmethod.pop("param", None))
+        result = _get_type(types, dmethod.pop("result", None))
         access = shv.RpcMethodAccess.fromstr(dmethod.pop("access", "cmd"))
         description = dmethod.pop("description", "")
 
@@ -479,6 +479,6 @@ def load_methods(
             keys = ", ".join(dmethod.keys())
             raise ValueError(f"Unsupported keys for method '{name}': {keys}")
 
-        res.add(SHVMethod(name, args, returns, flags, access, description))
+        res.add(SHVMethod(name, param, result, flags, access, description))
 
     return res

@@ -95,9 +95,9 @@ shvtree1_nodes: NamedSet[SHVNode] = NamedSet(
                 methods=NamedSet(
                     SHVMethod(
                         "getLog",
-                        args=tree1_types["getLogArgs"],
                         flags=RpcMethodFlags.LARGE_RESULT_HINT,
-                        returns=shvAny,
+                        param=tree1_types["getLogArgs"],
+                        result=shvAny,
                     )
                 ),
             )

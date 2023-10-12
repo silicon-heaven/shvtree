@@ -3,13 +3,7 @@ import dataclasses
 
 import pytest
 import shv
-from shv import (
-    RpcMessage,
-    RpcMethodAccess,
-    RpcMethodDesc,
-    RpcMethodNotFoundError,
-    RpcMethodSignature,
-)
+from shv import RpcMethodDesc, RpcMethodNotFoundError
 
 from shvtree.device import SHVTreeDevice
 
@@ -109,40 +103,14 @@ async def test_empty_ls_invalid(empty_device, client):
     list(
         (
             f"test/{path}",
-            [
-                RpcMethodDesc(
-                    "dir",
-                    RpcMethodSignature.RET_PARAM,
-                    access=RpcMethodAccess.BROWSE,
-                ),
-                RpcMethodDesc(
-                    "ls",
-                    RpcMethodSignature.RET_PARAM,
-                    access=RpcMethodAccess.BROWSE,
-                ),
-            ]
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()]
             + (
                 [
-                    RpcMethodDesc.getter(
-                        "shvVersionMajor",
-                        RpcMethodAccess.BROWSE,
-                    ),
-                    RpcMethodDesc.getter(
-                        "shvVersionMinor",
-                        RpcMethodAccess.BROWSE,
-                    ),
-                    RpcMethodDesc.getter(
-                        "appName",
-                        RpcMethodAccess.BROWSE,
-                    ),
-                    RpcMethodDesc.getter(
-                        "appVersion",
-                        RpcMethodAccess.BROWSE,
-                    ),
-                    RpcMethodDesc(
-                        "ping",
-                        access=RpcMethodAccess.BROWSE,
-                    ),
+                    RpcMethodDesc.getter("shvVersionMajor", param="Null", result="Int"),
+                    RpcMethodDesc.getter("shvVersionMinor", param="Null", result="Int"),
+                    RpcMethodDesc.getter("name", param="Null", result="String"),
+                    RpcMethodDesc.getter("version", param="Null", result="String"),
+                    RpcMethodDesc("ping"),
                 ]
                 if path == ".app"
                 else []
@@ -165,16 +133,9 @@ async def test_dir_invalid(device, client):
 
 async def test_empty_dir(empty_device, client):
     assert await client.dir("empty") == [
-        RpcMethodDesc(
-            "dir",
-            RpcMethodSignature.RET_PARAM,
-            access=RpcMethodAccess.BROWSE,
-        ),
-        RpcMethodDesc(
-            "ls",
-            RpcMethodSignature.RET_PARAM,
-            access=RpcMethodAccess.BROWSE,
-        ),
+        RpcMethodDesc.stddir(),
+        RpcMethodDesc.stdls(),
+        RpcMethodDesc.stdlschng(),
     ]
 
 
