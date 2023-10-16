@@ -1,6 +1,10 @@
 ===================
 Silicon Heaven Tree
 ===================
+.. image:: docs/_static/logo.svg
+   :align: right
+   :height: 128px
+   :alt: SHVTree logo [*]_
 
 This provides common parser and validator for Silicon Heaven tree
 representation. It is formed of nodes forming path and methods associated with
@@ -46,3 +50,6 @@ version from the source code using:
 .. code-block:: console
 
     $ sphinx-build -b html docs docs-html
+
+
+.. [*] Project logo is assembled from images by Freepik

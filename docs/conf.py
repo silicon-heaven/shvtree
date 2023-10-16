@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path("..").absolute()))
 
-project = "pySHVTree"
+project = "Silicon Heaven Tree"
 copyright = "SPDX-License-Identifier: MIT"
 author = "Elektroline a.s."
 
@@ -25,14 +25,13 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build"]
 
-# TODO logo
-# html_logo = "_static/logo.svg"
-# html_favicon = "_static/favicon.ico"
+html_logo = "_static/logo.svg"
+html_favicon = "_static/favicon.ico"
 html_copy_source = True
 html_show_sourcelink = True
 html_show_copyright = False
 html_theme = "sphinx_rtd_theme"
-# html_static_path = ["_static"]
+html_static_path = ["_static"]
 
 
 autodoc_typehints = "description"
