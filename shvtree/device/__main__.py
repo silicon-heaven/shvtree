@@ -20,7 +20,7 @@ log_levels = (
 )
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(
         "shvtree-dummy", description="Silicon Heaven Tree dummy"
@@ -56,7 +56,7 @@ def parse_args():
     return parser.parse_args()
 
 
-async def main():
+async def main() -> None:
     """Application's entrypoint."""
     args = parse_args()
 
@@ -72,6 +72,7 @@ async def main():
 
     logger.info("Starting the device.")
     server = await Device.connect(shv.RpcUrl.parse(args.URL))
+    assert isinstance(server, SHVTreeDummyDevice)
     inotify_task = asyncio.create_task(inotify_watch(tree_path, server))
     await server.task
     await inotify_task
@@ -80,11 +81,11 @@ async def main():
     inotify_task.cancel()
 
 
-async def inotify_watch(tree_path: pathlib.Path, device: SHVTreeDummyDevice):
+async def inotify_watch(tree_path: pathlib.Path, device: SHVTreeDummyDevice) -> None:
     """Wait for changes in the source file and update the tree."""
     with asyncinotify.Inotify() as inotify:
 
-        def add_watch():
+        def add_watch() -> None:
             inotify.add_watch(
                 tree_path, asyncinotify.Mask.MODIFY | asyncinotify.Mask.CLOSE_WRITE
             )

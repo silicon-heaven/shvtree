@@ -49,8 +49,8 @@
           };
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
-          nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
+          nativeBuildInputs = requires-docs pythonPackages ++ [sphinxHook];
+          nativeCheckInputs = requires-test pythonPackages ++ [pytestCheckHook];
         };
 
       pypkgs-asyncinotify = {

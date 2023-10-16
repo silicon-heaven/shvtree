@@ -11,8 +11,6 @@ workflow:
 
 variables:
   GIT_DEPTH: 0
-  GIT_SUBMODULE_STRATEGY: recursive
-  GIT_SUBMODULE_UPDATE_FLAGS: --jobs 2
 
 .nix:
   image: registry.gitlab.com/cynerd/gitlab-ci-nix
@@ -38,7 +36,7 @@ devenv:
 .test:
   stage: test
   extends: .nix
-  needs: [devenv]
+  needs: ["devenv"]
 
 tests:
   extends: .test
@@ -65,14 +63,13 @@ nix-check:
     - nix flake check
 
 include:
-  - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
 
 ## Linters #####################################################################
 .lint:
   stage: lint
   extends: .nix
-  needs: [devenv]
+  needs: ["devenv"]
 
 pylint:
   extends: .lint
@@ -83,13 +80,13 @@ mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop --quiet -c mypy --cache-dir .mypy-cache --ignore-missing-imports .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
 
 ## Style stage #################################################################
 .style:
   stage: style
   extends: .nix
-  needs: [devenv]
+  needs: ["devenv"]
   allow_failure: true
 
 black:
@@ -129,13 +126,13 @@ gitlint:
 
 release:
   extends: .deploy
-  image: "registry.nic.cz/turris/python-template/baseimg:release"
+  image: "registry.gitlab.com/gitlab-org/release-cli:latest"
   before_script:
-    - "apk update"
-    - "apk add bash curl jq py3-pip"
-    - "pip install yq"
+    - apk update
+    - apk add bash curl jq py3-pip
+    - pip install yq
   script:
-    - "bash .release.sh"
+    - bash .release.sh
 
 gitlab-pypi:
   extends: [.nix, .deploy]
@@ -148,7 +145,7 @@ pages:
   extends: .nix
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-  needs: [devenv]
+  needs: ["devenv"]
   script:
     - git fetch
     - nix develop --quiet -c sphinx-multiversion docs public

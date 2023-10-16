@@ -14,7 +14,7 @@ import shv
 from . import namedset
 
 
-def _chainpack_bytes(value) -> int:
+def _chainpack_bytes(value: shv.SHVType) -> int:
     """Size of the value in chainpack."""
     pack = shv.ChainPackWriter()
     pack.write(value)
@@ -49,12 +49,12 @@ class SHVTypeAny(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls):
+    def __new__(cls) -> "SHVTypeAny":
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Any")
 
     def validate(self, value: object) -> bool:
@@ -90,12 +90,12 @@ class SHVTypeNull(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls):
+    def __new__(cls) -> "SHVTypeNull":
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Null")
 
     def validate(self, value: object) -> bool:
@@ -116,12 +116,12 @@ class SHVTypeBool(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls):
+    def __new__(cls) -> "SHVTypeBool":
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Bool")
 
     def validate(self, value: object) -> bool:
@@ -144,7 +144,7 @@ class SHVTypeInt(SHVTypeBase):
         maximum: decimal.Decimal | None = None,
         multiple_of: decimal.Decimal | None = None,
         unsigned: bool | None = None,
-    ):
+    ) -> "SHVTypeInt":
         if maximum is None and multiple_of is None:
             if minimum is None:
                 if name == "Int":
@@ -167,7 +167,7 @@ class SHVTypeInt(SHVTypeBase):
         maximum: int | None = None,
         multiple_of: int | None = None,
         unsigned: bool | None = None,
-    ):
+    ) -> None:
         super().__init__(name)
         self._minimum = minimum
         self._maximum = maximum
@@ -198,7 +198,7 @@ class SHVTypeInt(SHVTypeBase):
         return self._maximum
 
     @maximum.setter
-    def maximum(self, value: int | None):
+    def maximum(self, value: int | None) -> None:
         if self._unsigned and value is not None and value < 0:
             raise ValueError("Can't be less than zero for unsigned number")
         self._maximum = value
@@ -276,7 +276,7 @@ class SHVTypeDouble(SHVTypeBase):
         exclusive_minimum: decimal.Decimal | None = None,
         exclusive_maximum: decimal.Decimal | None = None,
         multiple_of: decimal.Decimal | None = None,
-    ):
+    ) -> "SHVTypeDouble":
         if (
             minimum is None
             and maximum is None
@@ -299,7 +299,7 @@ class SHVTypeDouble(SHVTypeBase):
         exclusive_minimum: float | None = None,
         exclusive_maximum: float | None = None,
         multiple_of: float | None = None,
-    ):
+    ) -> None:
         super().__init__(name)
         self.minimum = minimum
         self.maximum = maximum
@@ -341,7 +341,7 @@ class SHVTypeDecimal(SHVTypeBase):
         name: str,
         minimum: decimal.Decimal | None = None,
         maximum: decimal.Decimal | None = None,
-    ):
+    ) -> "SHVTypeDecimal":
         if minimum is None and maximum is None:
             if name == "Decimal":
                 if cls.__obj is None:
@@ -355,7 +355,7 @@ class SHVTypeDecimal(SHVTypeBase):
         name: str,
         minimum: decimal.Decimal | None = None,
         maximum: decimal.Decimal | None = None,
-    ):
+    ) -> None:
         super().__init__(name)
         self.minimum = minimum
         self.maximum = maximum
@@ -415,7 +415,7 @@ class SHVTypeString(SHVTypeBase):
         min_length: int | None = None,
         max_length: int | None = None,
         pattern: str | None = None,
-    ):
+    ) -> "SHVTypeString":
         if min_length is None and max_length is None and pattern is None:
             if name == "String":
                 if cls.__obj is None:
@@ -430,7 +430,7 @@ class SHVTypeString(SHVTypeBase):
         min_length: int | None = None,
         max_length: int | None = None,
         pattern: str | None = None,
-    ):
+    ) -> None:
         super().__init__(name)
         self.min_length = min_length
         self.max_length = max_length
@@ -479,7 +479,7 @@ class SHVTypeBlob(SHVTypeBase):
         name: str,
         min_length: int | None = None,
         max_length: int | None = None,
-    ):
+    ) -> "SHVTypeBlob":
         if min_length is None and max_length is None:
             if name == "Blob":
                 if cls.__obj is None:
@@ -493,7 +493,7 @@ class SHVTypeBlob(SHVTypeBase):
         name: str,
         min_length: int | None = None,
         max_length: int | None = None,
-    ):
+    ) -> None:
         super().__init__(name)
         self.min_length = min_length
         self.max_length = max_length
@@ -530,12 +530,12 @@ class SHVTypeDateTime(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls):
+    def __new__(cls) -> "SHVTypeDateTime":
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("DateTime")
 
     def validate(self, value: object) -> bool:
@@ -553,7 +553,7 @@ class SHVTypeEnum(SHVTypeBase, dict[str, int]):
     allowed to have multiple names for the same number to support aliases.
     """
 
-    def __init__(self, name: str, *values: str, **kvalues: int):
+    def __init__(self, name: str, *values: str, **kvalues: int) -> None:
         """Initialize new Enum type.
 
         :param name: Name of the new type.
@@ -619,21 +619,21 @@ class SHVTypeList(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
     def __contains__(self, value: object) -> bool:
         return value in self._types
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[SHVTypeBase]:
         return iter(self._types)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._types)
 
-    def add(self, value: SHVTypeBase):
+    def add(self, value: SHVTypeBase) -> None:
         if value is shvAny:
             raise ValueError("To specify list with shvAny please use shvList")
         self._types.append(value)
 
-    def discard(self, value: SHVTypeBase):
+    def discard(self, value: SHVTypeBase) -> None:
         self._types.remove(value)
 
-    def update(self, values: typing.Iterable[SHVTypeBase]):
+    def update(self, values: typing.Iterable[SHVTypeBase]) -> None:
         for value in values:
             self.add(value)
 
@@ -648,19 +648,19 @@ class SHVTypeListAny(SHVTypeList):
 
     __obj = None
 
-    def __new__(cls):
+    def __new__(cls) -> "SHVTypeListAny":
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("List")
         self._types.append(shvAny)
 
-    def add(self, value: object):
+    def add(self, value: object) -> None:
         raise RuntimeError("Modification disabled for shvList")
 
-    def discard(self, value: object):
+    def discard(self, value: object) -> None:
         raise RuntimeError("Modification disabled for shvList")
 
 
@@ -673,7 +673,7 @@ class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
 
     def __init__(
         self, name: str, *fields: SHVTypeBase, enum: None | SHVTypeEnum = None
-    ):
+    ) -> None:
         """Initialize new Tuple type.
 
         :param fields: Keywords declaring name and type of the field in the
@@ -684,7 +684,7 @@ class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
         self.extend(fields)
         self.enum: SHVTypeEnum | None = enum
 
-    def __eq__(self, other: object):
+    def __eq__(self, other: object) -> bool:
         return (
             hasattr(other, "enum") and other.enum == self.enum and super().__eq__(other)
         )
@@ -751,22 +751,22 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
             key = self.enum[key]
         return self._fields[key]
 
-    def __setitem__(self, key: int | str, value: SHVTypeBase):
+    def __setitem__(self, key: int | str, value: SHVTypeBase) -> None:
         if not isinstance(key, int):
             raise KeyError("Only integer key types can be assigned")
         self._fields[key] = value
 
-    def __delitem__(self, key: int | str):
+    def __delitem__(self, key: int | str) -> None:
         if isinstance(key, str):
             if self.enum is None:
                 raise KeyError("Can't use name unless you set enum attribute.")
             key = self.enum[key]
         del self._fields[key]
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[int]:
         return iter(self._fields)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._fields)
 
     def validate(self, value: object) -> bool:
@@ -820,23 +820,23 @@ class SHVTypeOneOf(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
     def __contains__(self, value: object) -> bool:
         return value in self._types
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[SHVTypeBase]:
         return iter(self._types)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._types)
 
-    def add(self, value: object):
+    def add(self, value: object) -> None:
         if not isinstance(value, SHVTypeBase):
             raise TypeError("Only instances of SHVTypeBase can be included")
         self._types.append(value)
 
-    def discard(self, value: object):
+    def discard(self, value: object) -> None:
         if not isinstance(value, SHVTypeBase):
             raise TypeError("Only instances of SHVTypeBase can be included")
         self._types.remove(value)
 
-    def update(self, values: typing.Iterable[SHVTypeBase]):
+    def update(self, values: typing.Iterable[SHVTypeBase]) -> None:
         for value in values:
             self.add(value)
 

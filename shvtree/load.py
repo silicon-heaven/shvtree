@@ -350,7 +350,7 @@ _load_types_sec: dict[
 }
 
 
-def _load_types_invalid(name: str, attrs: collections.abc.MutableMapping):
+def _load_types_invalid(name: str, attrs: collections.abc.MutableMapping) -> None:
     raise ValueError(f"Invalid 'type' of the {name} type.")
 
 
@@ -388,6 +388,7 @@ def load_types(
             tp = _load_types.get(attrs.pop("type"), _load_types_invalid)(key, attrs)
             if attrs:
                 raise ValueError(f"Invalid keys for type '{key}': {attrs.keys()}")
+            assert tp is not None
             res.add(tp)
         else:
             raise TypeError(f"Invalid type description: {value}")

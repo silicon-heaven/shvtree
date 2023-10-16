@@ -40,7 +40,7 @@ class SHVTree(SHVNode):
             return shvBuiltins[name]
         return self.types[name]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return super().__str__() + str(
             {
                 "types": str(self.types),
@@ -48,7 +48,7 @@ class SHVTree(SHVNode):
             }
         )
 
-    def __eq__(self, other: object):
+    def __eq__(self, other: object) -> bool:
         return super().__eq__(other) and (
             isinstance(other, SHVTree) and self.types == other.types
         )

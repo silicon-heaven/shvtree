@@ -148,7 +148,7 @@ class SHVTreeDevice(shv.SimpleClient):
     _method_name_re = re.compile(r"\W|^(?=\d)")
 
     @classmethod
-    def _method_name(cls, path: str, method: str):
+    def _method_name(cls, path: str, method: str) -> str:
         """Map given generic method and path to the naming of it in this class.
 
         This method should not validate method or anything. It should only just

@@ -25,7 +25,7 @@ class TreeDevice(SHVTreeDevice):
         return "unknown"
 
     def _properties_boolean_get(self) -> bool:
-        return self.prop_boolean
+        return bool(self.prop_boolean)
 
     async def _properties_boolean_set(
         self, params: bool, signals: SHVTreeDevice.Signals

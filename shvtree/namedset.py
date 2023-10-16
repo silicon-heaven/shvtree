@@ -34,23 +34,23 @@ class NamedSet(collections.abc.Mapping[str, NamedT]):
         """
         self.__namedset: list[NamedT] = list(values)
 
-    def add(self, obj: NamedT):
+    def add(self, obj: NamedT) -> None:
         """Add given object to the set."""
         if obj.name in self:
             raise ValueError("Object of this name is already present in the set.")
         self.__namedset.append(obj)
 
-    def __contains__(self, item: object):
+    def __contains__(self, item: object) -> bool:
         if isinstance(item, Named):
             return item in self.__namedset
         if isinstance(item, str):
             return any(item == named.name for named in self.__namedset)
         return False
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[str]:
         return (value.name for value in self.__namedset)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__namedset)
 
     def __getitem__(self, key: str) -> NamedT:
@@ -59,15 +59,15 @@ class NamedSet(collections.abc.Mapping[str, NamedT]):
         except StopIteration as exc:
             raise KeyError(f"No item for key: {key}") from exc
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         self.discard(self[key])
 
-    def discard(self, value: NamedT):
+    def discard(self, value: NamedT) -> None:
         self.__namedset.remove(value)
 
-    def update(self, nset: NamedSet):
+    def update(self, nset: NamedSet) -> None:
         for obj in nset.values():
             self.add(obj)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str({value.name: str(value) for value in self.__namedset})

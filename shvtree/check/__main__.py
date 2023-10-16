@@ -9,7 +9,7 @@ from .check import Checks, check
 logger = logging.getLogger(__name__)
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse passed arguments and return result."""
     parser = argparse.ArgumentParser(
         "shvtree-check", description="Silicon Heaven Tree cheker"

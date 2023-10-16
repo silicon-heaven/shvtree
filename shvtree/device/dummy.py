@@ -90,12 +90,12 @@ class SHVTreeDummyDevice(SHVTreeDevice):
             return shvtp.value
         raise shv.RpcMethodCallExceptionError(f"Can't generate value for type: {shvtp}")
 
-    def _serialNumber_get(self):
+    def _serialNumber_get(self) -> int:
         return 0xFF42
 
-    def _status_get(self, method: SHVMethod):
+    def _status_get(self, method: SHVMethod) -> int:
         assert isinstance(method.result, SHVTypeEnum)
         return method.result["ok"]
 
-    def _errors_get(self):
+    def _errors_get(self) -> int:
         return 0
