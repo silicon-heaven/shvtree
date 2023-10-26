@@ -35,9 +35,9 @@
 
       pypkgs-pyshvtree = {
         buildPythonPackage,
+        pytestCheckHook,
         pythonPackages,
         sphinxHook,
-        pytestCheckHook,
       }:
         buildPythonPackage {
           pname = pyproject.project.name;
@@ -91,21 +91,17 @@
     in
       {
         overlays = {
-          pyshvtree = final: prev: {
-            python3 = prev.python3.override (oldAttrs: {
-              packageOverrides = composeExtensions oldAttrs.packageOverrides (
-                pyfinal: pyprev: {
-                  pyshvtree = pyfinal.callPackage pypkgs-pyshvtree {};
-                  asyncinotify = pyfinal.callPackage pypkgs-asyncinotify {};
-                  sphinx-multiversion = pyfinal.callPackage pypkg-multiversion {};
-                }
-              );
-            });
-            python3Packages = final.python3.pkgs;
+          pythonPackagesExtension = final: prev: {
+            pyshvtree = final.callPackage pypkgs-pyshvtree {};
+            asyncinotify = final.callPackage pypkgs-asyncinotify {};
+            sphinx-multiversion = final.callPackage pypkg-multiversion {};
+          };
+          noInherit = final: prev: {
+            pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
           };
           default = composeManyExtensions [
             pyshv.overlays.default
-            self.overlays.pyshvtree
+            self.overlays.noInherit
           ];
         };
       }
@@ -114,7 +110,7 @@
       in {
         packages = {
           inherit (pkgs.python3Packages) pyshvtree;
-          default = self.packages.${system}.pyshvtree;
+          default = pkgs.python3Packages.pyshvtree;
         };
         legacyPackages = pkgs;
 
