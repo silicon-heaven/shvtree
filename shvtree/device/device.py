@@ -44,10 +44,9 @@ class SHVTreeDevice(shv.SimpleClient):
     APP_NAME = "pyshvtree"
 
     def _ls(self, path: str) -> typing.Iterator[str]:
+        yield from super()._ls(path)
         if self.tree is not None and (node := self.tree.get_node(path)) is not None:
             yield from (n.name for n in node.nodes.values())
-        else:
-            yield from super()._ls(path)
 
     def _dir(self, path: str) -> typing.Iterator[shv.RpcMethodDesc]:
         yield from super()._dir(path)
