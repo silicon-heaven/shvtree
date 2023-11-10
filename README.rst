@@ -16,9 +16,9 @@ methods and basic type description. The core of this project is definition of
 format describing the tree but it also provides SHV device implementation based
 on the provided tree.
 
-* `📃 Sources <https://gitlab.com/elektroline-predator/pyshvtree>`__
-* `⁉️ Issue tracker <https://gitlab.com/elektroline-predator/pyshvtree/-/issues>`__
-* `📕 Documentation <https://elektroline-predator.gitlab.io/pyshvtree/>`__
+* `📃 Sources <https://gitlab.com/elektroline-predator/shvtree>`__
+* `⁉️ Issue tracker <https://gitlab.com/elektroline-predator/shvtree/-/issues>`__
+* `📕 Documentation <https://elektroline-predator.gitlab.io/shvtree/>`__
 
 
 Installation
