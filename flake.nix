@@ -33,7 +33,7 @@
         pypi2nix pyproject.project.optional-dependencies.lint p
         ++ [p.build p.twine];
 
-      pypkgs-pyshvtree = {
+      pypkg-shvtree = {
         buildPythonPackage,
         pytestCheckHook,
         pythonPackages,
@@ -53,7 +53,7 @@
           nativeCheckInputs = requires-test pythonPackages ++ [pytestCheckHook];
         };
 
-      pypkgs-asyncinotify = {
+      pypkg-asyncinotify = {
         buildPythonPackage,
         fetchPypi,
         pipBuildHook,
@@ -92,8 +92,8 @@
       {
         overlays = {
           pythonPackagesExtension = final: prev: {
-            pyshvtree = final.callPackage pypkgs-pyshvtree {};
-            asyncinotify = final.callPackage pypkgs-asyncinotify {};
+            shvtree = final.callPackage pypkg-shvtree {};
+            asyncinotify = final.callPackage pypkg-asyncinotify {};
             sphinx-multiversion = final.callPackage pypkg-multiversion {};
           };
           noInherit = final: prev: {
@@ -109,8 +109,8 @@
         pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
       in {
         packages = {
-          inherit (pkgs.python3Packages) pyshvtree;
-          default = pkgs.python3Packages.pyshvtree;
+          inherit (pkgs.python3Packages) shvtree;
+          default = pkgs.python3Packages.shvtree;
         };
         legacyPackages = pkgs;
 
