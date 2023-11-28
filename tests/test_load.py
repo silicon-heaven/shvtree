@@ -2,7 +2,7 @@
 import pytest
 
 from shvtree import NamedSet, SHVNode, SHVTree
-from shvtree.load import load, load_json, load_raw
+from shvtree.load import SHVTreeValueError, load, load_json, load_raw
 
 from . import trees
 
@@ -29,42 +29,49 @@ def test_empty_tree():
 
 
 def test_invalid_type_types():
-    with pytest.raises(TypeError, match=r"^Invalid type of 'types': <class 'bool'>$"):
+    with pytest.raises(SHVTreeValueError, match=r"^types: Invalid format$"):
         load_raw({"types": True})
 
 
 def test_invalid_type_nodes():
-    with pytest.raises(TypeError, match=r"^Invalid type of 'nodes': <class 'bool'>$"):
+    with pytest.raises(SHVTreeValueError, match=r"^nodes: Invalid format$"):
         load_raw({"nodes": False})
 
 
 def test_invalid_type_node_methods():
-    with pytest.raises(TypeError, match=r"^Invalid type of 'methods': <class 'bool'>$"):
+    with pytest.raises(SHVTreeValueError, match=r"^nodes.foo.methods: Invalid format$"):
         load_raw({"nodes": {"foo": {"methods": False}}})
 
 
 def test_invalid_key():
-    with pytest.raises(ValueError, match=r"^Unsupported keys: invalid$"):
+    with pytest.raises(SHVTreeValueError, match=r"^Unsupported keys: invalid$"):
         load_raw({"invalid": None})
 
 
 def test_invalid_prop_type():
-    with pytest.raises(ValueError, match=r"^Invalid type reference name: invalid$"):
+    with pytest.raises(
+        SHVTreeValueError,
+        match=r"^nodes.foo.property: Invalid type reference name: invalid$",
+    ):
         load_raw({"nodes": {"foo": {"property": "invalid"}}})
 
 
 def test_invalid_node_key():
-    with pytest.raises(ValueError, match=r"^Unsupported keys for node 'foo': invalid$"):
+    with pytest.raises(
+        SHVTreeValueError, match=r"^nodes.foo: Unsupported keys: invalid$"
+    ):
         load_raw({"nodes": {"foo": {"invalid": "foo"}}})
 
 
 def test_invalid_node_method_key():
     with pytest.raises(
-        ValueError, match=r"^Unsupported keys for method 'foo': invalid$"
+        SHVTreeValueError, match=r"^nodes.foo.methods.foo: Unsupported keys: invalid$"
     ):
         load_raw({"nodes": {"foo": {"methods": {"foo": {"invalid": "foo"}}}}})
 
 
 def test_invalid_node_method_flag():
-    with pytest.raises(ValueError, match=r"^Invalid flag for method 'get': INVALID$"):
+    with pytest.raises(
+        SHVTreeValueError, match=r"^nodes.foo.methods.get.flags: Invalid flag: INVALID$"
+    ):
         load_raw({"nodes": {"foo": {"methods": {"get": {"flags": ["invalid"]}}}}})

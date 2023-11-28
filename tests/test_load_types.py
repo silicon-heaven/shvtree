@@ -26,7 +26,7 @@ from shvtree import (
     shvString,
     shvUInt,
 )
-from shvtree.load import load_types
+from shvtree.load import load_types, SHVTreeValueError
 from shvtree.namedset import NamedSet
 
 from . import trees
@@ -182,42 +182,42 @@ def test_load_types(repre, expected):
 
 
 def test_load_type_invalid_builtin():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"Double": shvDouble})
 
 
 def test_load_type_invalid_repre():
-    with pytest.raises(TypeError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"invalid": set()})
 
 
 def test_load_type_invalid_no_type():
-    with pytest.raises(KeyError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"notype": {}})
 
 
 def test_load_type_invalid_key():
-    with pytest.raises(ValueError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"toomuch": {"type": "List", "invalid": None}})
 
 
 def test_load_type_invalid_missing():
-    with pytest.raises(ValueError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"toomuch": "nosuchtype"})
 
 
 def test_load_type_invalid_enum():
-    with pytest.raises(ValueError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"foo": {"type": "Enum", "values": [None]}})
 
 
 def test_load_type_invalid_tuple_enum():
-    with pytest.raises(ValueError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"foo": {"type": "Tuple", "enum": "Int"}})
 
 
 def test_load_type_invalid_imap_fields():
-    with pytest.raises(ValueError):
+    with pytest.raises(SHVTreeValueError):
         load_types({"foo": {"type": "IMap", "fields": [3]}})
 
 

@@ -3,7 +3,9 @@ import argparse
 import logging
 import sys
 
-from .. import load, load_yaml
+import ruamel.yaml
+
+from .. import SHVTree, load, load_yaml
 from .check import Checks, check
 
 logger = logging.getLogger(__name__)
@@ -37,7 +39,11 @@ def parse_args() -> argparse.Namespace:
 
 def do_check(path: str, disable: Checks) -> bool:
     """Perform check for the given file and report found issues."""
-    tree = load_yaml(sys.stdin) if path == "-" else load(path)
+    try:
+        tree = load_yaml(sys.stdin) if path == "-" else load(path)
+    except (ValueError, ruamel.yaml.parser.ParserError) as exc:
+        print(f"Invalid input: {exc}")
+        return False
     res = check(tree, disable)
     if res:
         print(f"Issues for '{path}':")
