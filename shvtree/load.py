@@ -495,7 +495,9 @@ def load_nodes(
         prop = dnode.pop("property", None)
         if prop is not None:
             readonly = bool(dnode.pop("readonly", False))
-            signal = bool(dnode.pop("signal", not readonly))
+            if not isinstance(readonly, bool):
+                raise SHVTreeValueError(location + [name, "property"], "Invalid format")
+            signal = dnode.pop("signal", not readonly)
             shvtype = _get_type(location + [name, "property"], types, prop)
             node.make_property(shvtype, readonly, signal)
 

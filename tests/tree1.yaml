@@ -108,6 +108,7 @@ nodes:
   status:
     property: status
     readonly: true
+    signal: fchng
 
   errors:
     property: errors

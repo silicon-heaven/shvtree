@@ -38,6 +38,19 @@ class SHVMethod(namedset.Named):
         self.description = description
 
     @classmethod
+    def new_signal(
+        cls,
+        name: str,
+        dtype: SHVTypeBase,
+        flags: shv.RpcMethodFlags = shv.RpcMethodFlags(0),
+        access: shv.RpcMethodAccess = shv.RpcMethodAccess.READ,
+        description: str = "",
+    ) -> SHVMethod:
+        """Initialize new method that is signal."""
+        nflags = flags | shv.RpcMethodFlags.SIGNAL
+        return cls(name, shvNull, dtype, nflags, access, description)
+
+    @classmethod
     def new_change(
         cls,
         dtype: SHVTypeBase,
@@ -45,9 +58,8 @@ class SHVMethod(namedset.Named):
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.READ,
         description: str = "",
     ) -> SHVMethod:
-        """Initialize new method that is standard signal."""
-        nflags = flags | shv.RpcMethodFlags.SIGNAL
-        return cls("chng", shvNull, dtype, nflags, access, description)
+        """Initialize new method that is standard change signal."""
+        return cls.new_signal("chng", dtype, flags, access, description)
 
     @classmethod
     def new_getter(

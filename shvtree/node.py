@@ -57,7 +57,10 @@ class SHVNode(namedset.Named):
         return res
 
     def make_property(
-        self, dtype: SHVTypeBase, readonly: bool = False, signal: bool | None = None
+        self,
+        dtype: SHVTypeBase,
+        readonly: bool = False,
+        signal: bool | str | None = None,
     ) -> None:
         """Add methods for making this node a property node with given type.
 
@@ -68,7 +71,8 @@ class SHVNode(namedset.Named):
         :param dtype: Type of the property.
         :param readonly: Sets that property is read-only.
         :param signal: Sets that property change is signaled. If ``None`` is
-          passed then change is signaled only for non-readonly property.
+          passed then change is signaled only for non-readonly property. You can
+          pass string to specify different signal name over ``chng``.
         :raises SHVPropError: there is one of the property method already
             present.
         """
@@ -76,7 +80,11 @@ class SHVNode(namedset.Named):
         if not readonly:
             self.methods.add(SHVMethod.new_setter(dtype))
         if signal or signal is None and not readonly:
-            self.methods.add(SHVMethod.new_change(dtype))
+            self.methods.add(
+                SHVMethod.new_signal(
+                    signal if isinstance(signal, str) else "chng", dtype
+                )
+            )
 
     def is_property(
         self,

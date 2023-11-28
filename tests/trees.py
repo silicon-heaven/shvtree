@@ -107,7 +107,9 @@ shvtree1_nodes: NamedSet[SHVNode] = NamedSet(
         "serialNumber", shvInt, readonly=True, description="Serial number of the board"
     ),
     SHVNode.new_property("hwVersion", shvString, readonly=True),
-    SHVNode.new_property("status", tree1_types["status"], readonly=True),
+    SHVNode.new_property(
+        "status", tree1_types["status"], readonly=True, signal="fchng"
+    ),
     SHVNode.new_property("errors", tree1_types["errors"]),
     SHVNode.new_property("utcTime", shvDateTime),
     SHVNode.new_property("localTime", shvDateTime, readonly=True),

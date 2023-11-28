@@ -49,11 +49,12 @@ readonly
   should exist.
 
 signal
-  Makes property change signaled when set to ``true``. The default depends on
-  ``readonly``, when ``readonly`` is ``true`` then default is ``false``
-  otherwise ``true``. That is because it is common that read only property are
-  not signaled. This is valid only when ``property`` is also used. This controls
-  if ``chng`` signal method should exist.
+  Makes property change signaled with signal ``chng`` when set to ``true``. The
+  default depends on ``readonly``, when ``readonly`` is ``true`` then default is
+  ``false`` otherwise ``true``. That is because it is more common that read only
+  property are not signaled. This is valid only when ``property`` is also used.
+  Instead of boolean you can also use string which is then used as signal's
+  name. That is allowed to support different signals over ``chng``.
 
 description
   The brief description of the node.
