@@ -3,6 +3,7 @@ import argparse
 import asyncio
 import logging
 import pathlib
+import typing
 
 import asyncinotify
 import shv
@@ -56,7 +57,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def main() -> None:
+def main() -> None:
     """Application's entrypoint."""
     args = parse_args()
 
@@ -70,18 +71,28 @@ async def main() -> None:
     class Device(SHVTreeDummyDevice):
         tree = load(tree_path)
 
+    loop = asyncio.get_event_loop()
+
+    inotify_task = loop.create_task(inotify_watch(tree_path, Device))
     logger.info("Starting the device.")
-    server = await Device.connect(shv.RpcUrl.parse(args.URL))
+    server = loop.run_until_complete(Device.connect(shv.RpcUrl.parse(args.URL)))
     assert isinstance(server, SHVTreeDummyDevice)
-    inotify_task = asyncio.create_task(inotify_watch(tree_path, server))
-    await server.task
-    await inotify_task
+    try:
+        loop.run_until_complete(server.task)
+    except KeyboardInterrupt:
+        loop.run_until_complete(server.disconnect())
     logger.info("The device terminated.")
 
     inotify_task.cancel()
+    try:
+        loop.run_until_complete(inotify_task)
+    except asyncio.CancelledError:
+        pass
 
 
-async def inotify_watch(tree_path: pathlib.Path, device: SHVTreeDummyDevice) -> None:
+async def inotify_watch(
+    tree_path: pathlib.Path, device: typing.Type[SHVTreeDummyDevice]
+) -> None:
     """Wait for changes in the source file and update the tree."""
     with asyncinotify.Inotify() as inotify:
 
@@ -103,4 +114,4 @@ async def inotify_watch(tree_path: pathlib.Path, device: SHVTreeDummyDevice) -> 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
