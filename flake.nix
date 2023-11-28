@@ -14,11 +14,15 @@
     with flake-utils.lib;
     with nixpkgs.lib; let
       pyproject = trivial.importTOML ./pyproject.toml;
-      list2attr = list: attr: attrValues (getAttrs list attr);
+      src = builtins.path {
+        path = ./.;
+        filter = path: type: ! hasSuffix ".nix" path;
+      };
 
       pypy2nix_map = {
         "ruamel.yaml" = "ruamel-yaml";
       };
+      list2attr = list: attr: attrValues (getAttrs list attr);
       pypi2nix = list:
         list2attr (map (n: let
           nn = elemAt (match "([^ ]*).*" n) 0;
@@ -43,10 +47,7 @@
           pname = pyproject.project.name;
           inherit (pyproject.project) version;
           format = "pyproject";
-          src = builtins.path {
-            path = ./.;
-            filter = path: type: ! hasSuffix ".nix" path;
-          };
+          inherit src;
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
           nativeBuildInputs = requires-docs pythonPackages ++ [sphinxHook];
