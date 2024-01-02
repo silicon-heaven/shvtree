@@ -250,10 +250,15 @@ IMap
   only existing keys need to be used to match this specified type. The supported
   additional fields are:
 
-  * ``fields`` which is the same mapping as for ``Map``
-  * ``enum`` that assigns integer to aliases specified in ``fields``. The
-    provided enum type needs to map all aliases to some integer, thus this field
-    is need to be always specified.
+  * ``fields`` that defines allowed fields in IMap. It must be list of types for
+    specific index (starting with ``0``). You can specify custom value using
+    mapping (``String: 42``). This format is the same as for ``Enum`` except
+    that name of the type is expected instead of alias name. If you define
+    ``enum`` then it can also be mapping instead of list where key must be alias
+    from enum and value is the type.
+  * ``enum`` provides optional string aliases for ``fields``. It is used if
+    ``fields`` is mapping and by code generators. It must be name of the *Enum*
+    type.
 
 
 

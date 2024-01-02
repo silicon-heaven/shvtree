@@ -15,6 +15,10 @@ def test_tree2(path_tree2):
     assert load(str(path_tree2)) == trees.tree2
 
 
+def test_tree3(path_tree3):
+    assert load(str(path_tree3)) == trees.tree3
+
+
 def test_load_invalid():
     with pytest.raises(RuntimeError):
         load("foo.txt")

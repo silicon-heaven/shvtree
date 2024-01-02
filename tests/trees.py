@@ -141,3 +141,15 @@ shvtree2_nodes: NamedSet[SHVNode] = NamedSet(
 )
 
 tree2 = SHVTree(nodes=shvtree2_nodes)
+
+
+_tree1_types_xmapEnum = SHVTypeEnum("xmapEnum", "one", "two", "three")
+shvtree3_types = NamedSet(
+    _tree1_types_xmapEnum,
+    SHVTypeIMap("xmap", shvInt, shvString, shvDateTime, enum=_tree1_types_xmapEnum),
+)
+shvtree3_nodes: NamedSet[SHVNode] = NamedSet(
+    SHVNode.new_property("xmap", shvtree3_types["xmap"])
+)
+
+tree3 = SHVTree(types=shvtree3_types, nodes=shvtree3_nodes)

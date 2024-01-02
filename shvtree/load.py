@@ -323,22 +323,28 @@ def _load_types_imap_2(
     attrs: collections.abc.Mapping,
 ) -> None:
     assert isinstance(obj, SHVTypeIMap)
-    fields = attrs.get("fields", [])
-    if not isinstance(fields, collections.abc.Sequence):
-        raise SHVTreeValueError(location + ["fields"], "Invalid format")
-    nexti = 0
-    for dkey in fields:
-        if isinstance(dkey, str):
-            obj[nexti] = _get_type(location + ["fields"], res, dkey)
-            nexti += 1
-        elif isinstance(dkey, collections.abc.Mapping):
-            for key, value in dkey.items():
-                obj[value] = _get_type(location + ["fields", key], res, key)
-                nexti = value + 1
-        else:
-            raise SHVTreeValueError(location + ["fields"], "Invalid fields format")
     if (denum := attrs.get("enum", None)) is not None:
         obj.enum = _get_enum(location + ["enum"], res, denum)
+    fields = attrs.get("fields", [])
+    if isinstance(fields, collections.abc.Mapping):
+        for dkey, dvalue in fields.items():
+            if not isinstance(dkey, str):
+                raise SHVTreeValueError(location + ["fields"], "Key must be string")
+            obj[dkey] = _get_type(location + ["fields"], res, dvalue)
+    elif isinstance(fields, collections.abc.Sequence):
+        nexti = 0
+        for dkey in fields:
+            if isinstance(dkey, str):
+                obj[nexti] = _get_type(location + ["fields"], res, dkey)
+                nexti += 1
+            elif isinstance(dkey, collections.abc.Mapping):
+                for key, value in dkey.items():
+                    obj[value] = _get_type(location + ["fields", key], res, key)
+                    nexti = value + 1
+            else:
+                raise SHVTreeValueError(location + ["fields"], "Invalid fields format")
+    else:
+        raise SHVTreeValueError(location + ["fields"], "Invalid format")
 
 
 def _load_types_constant(

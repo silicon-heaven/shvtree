@@ -740,16 +740,22 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
     """
 
     def __init__(
-        self, name: str, *fields: SHVTypeBase, enum: SHVTypeEnum | None = None
+        self,
+        name: str,
+        *fields: SHVTypeBase,
+        enum: SHVTypeEnum | None = None,
+        **kwfields: SHVTypeBase,
     ):
         """Initialize new List type.
 
         :param name: Name of the new type.
-        :param types: Allowed types in the list.
+        :param enum: Optional mapping for index fields to string keys.
         """
         super().__init__(name)
-        self._fields: dict[int, SHVTypeBase] = dict(enumerate(fields))
         self.enum = enum
+        self._fields: dict[int, SHVTypeBase] = dict(enumerate(fields))
+        for key, value in kwfields.items():
+            self.__setitem__(key, value)
 
     def __getitem__(self, key: int | str) -> SHVTypeBase:
         if isinstance(key, str):
@@ -759,8 +765,10 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
         return self._fields[key]
 
     def __setitem__(self, key: int | str, value: SHVTypeBase) -> None:
-        if not isinstance(key, int):
-            raise KeyError("Only integer key types can be assigned")
+        if isinstance(key, str):
+            if self.enum is None:
+                raise KeyError("Can't use name unless you set enum attribute.")
+            key = self.enum[key]
         self._fields[key] = value
 
     def __delitem__(self, key: int | str) -> None:

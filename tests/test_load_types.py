@@ -26,14 +26,17 @@ from shvtree import (
     shvString,
     shvUInt,
 )
-from shvtree.load import load_types, SHVTreeValueError
+from shvtree.load import SHVTreeValueError, load_types
 from shvtree.namedset import NamedSet
 
 from . import trees
 
 _nullAlias = SHVTypeAlias("nullAlias", shvNull)
 
-_myIMap = SHVTypeIMap("myimap")
+_myIMapEnum = SHVTypeEnum("myimapEnum", "one", "two")
+_myIMapEnum["seven"] = 7
+
+_myIMap = SHVTypeIMap("myimap", enum=_myIMapEnum)
 _myIMap[0] = shvString
 _myIMap[1] = shvDateTime
 _myIMap[7] = shvBlob
@@ -169,10 +172,29 @@ _someEnum = SHVTypeEnum("someenum", "name", "surname")
             {
                 "myimap": {
                     "type": "IMap",
+                    "enum": "myimapEnum",
                     "fields": ["String", "DateTime", {"Blob": 7}],
-                }
+                },
+                "myimapEnum": {
+                    "type": "Enum",
+                    "values": ["one", "two", {"seven": 7}],
+                },
             },
-            NamedSet(_myIMap),
+            NamedSet(_myIMap, _myIMapEnum),
+        ),
+        (
+            {
+                "myimap": {
+                    "type": "IMap",
+                    "enum": "myimapEnum",
+                    "fields": {"one": "String", "two": "DateTime", "seven": "Blob"},
+                },
+                "myimapEnum": {
+                    "type": "Enum",
+                    "values": ["one", "two", {"seven": 7}],
+                },
+            },
+            NamedSet(_myIMap, _myIMapEnum),
         ),
     ),
 )
@@ -217,7 +239,7 @@ def test_load_type_invalid_tuple_enum():
 
 
 def test_load_type_invalid_imap_fields():
-    with pytest.raises(SHVTreeValueError):
+    with pytest.raises(ValueError):
         load_types({"foo": {"type": "IMap", "fields": [3]}})
 
 

@@ -1,0 +1,20 @@
+---
+types:
+  xmapEnum:
+    type: Enum
+    values:
+      - one
+      - two
+      - three
+  xmap:
+    type: IMap
+    enum: xmapEnum
+    fields:
+      one: Int
+      two: String
+      three: DateTime
+
+
+nodes:
+  xmap:
+    property: xmap
