@@ -606,7 +606,9 @@ class SHVTypeBitfield(SHVTypeEnum):
 class SHVTypeList(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
     """The native SHV type that contains ordered values."""
 
-    def __init__(self, name: str, *types: SHVTypeBase):
+    def __init__(
+        self, name: str, *types: SHVTypeBase, minlen: int = 0, maxlen: int | None = None
+    ):
         """Initialize new List type.
 
         :param name: Name of the new type.
@@ -615,6 +617,8 @@ class SHVTypeList(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
         super().__init__(name)
         self._types: list[SHVTypeBase] = []
         self.update(types)
+        self.minlen: int = minlen
+        self.maxlen: int | None = maxlen
 
     def __contains__(self, value: object) -> bool:
         return value in self._types
@@ -638,8 +642,11 @@ class SHVTypeList(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
             self.add(value)
 
     def validate(self, value: object) -> bool:
-        return isinstance(value, collections.abc.Sequence) and all(
-            any(tp.validate(item) for tp in self._types) for item in value
+        return (
+            isinstance(value, collections.abc.Sequence)
+            and all(any(tp.validate(item) for tp in self._types) for item in value)
+            and self.minlen <= len(value)
+            and (self.maxlen is None or len(value) <= self.maxlen)
         )
 
 

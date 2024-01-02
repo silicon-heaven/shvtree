@@ -222,8 +222,11 @@ Bitfield
 
 List
   Allows you to define list that can contain only some of the types instead of
-  ``Any``. The only supported extra field is ``allowed`` which needs to be list
-  of allowed types.
+  ``Any``. The supported fields are:
+
+  * ``allowed`` this is list of allowed types that can be included in the list.
+  * ``minlen`` minimal length of the list (the default is 0)
+  * ``maxlen`` maximal length of the list (the default is unlimited)
 
 Tuple
   This is list with fixed length and fields. The supported additional fields

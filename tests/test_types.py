@@ -63,6 +63,7 @@ def test_signletons(obj1, obj2):
         (SHVTypeString("foo", max_length=2), "f"),
         (SHVTypeString("foo", pattern=r"^o*$"), "oo"),
         (SHVTypeBlob("foo", max_length=2), b"f"),
+        (SHVTypeList("foo", shvString, minlen=1, maxlen=2), ["foo"]),
     ),
 )
 def test_valid(shvtype, value):
@@ -97,6 +98,8 @@ def test_valid(shvtype, value):
         (SHVTypeString("foo", max_length=2), "foo"),
         (SHVTypeString("foo", pattern=r"^o*$"), "foo"),
         (SHVTypeBlob("foo", max_length=2), b"foo"),
+        (SHVTypeList("foo", shvString, minlen=1, maxlen=2), []),
+        (SHVTypeList("foo", shvString, minlen=1, maxlen=2), ["1", "2", "3"]),
     ),
 )
 def test_invalid(shvtype, value):

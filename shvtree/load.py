@@ -242,7 +242,11 @@ def _load_types_list_1(
     location: list[str], name: str, attrs: collections.abc.MutableMapping
 ) -> SHVTypeList:
     attrs.pop("allowed", None)  # Loaded in second pass
-    return SHVTypeList(name)
+    return SHVTypeList(
+        name,
+        minlen=int(attrs.pop("minlen", 0)),
+        maxlen=int(attrs.pop("maxlen")) if "maxlen" in attrs else None,
+    )
 
 
 def _load_types_list_2(
