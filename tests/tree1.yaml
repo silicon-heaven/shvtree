@@ -115,6 +115,7 @@ nodes:
 
   utcTime:
     property: DateTime
+    signal: false
 
   localTime:
     property: DateTime
