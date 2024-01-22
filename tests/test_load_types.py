@@ -21,6 +21,7 @@ from shvtree import (
     shvDateTime,
     shvDecimal,
     shvDouble,
+    shvInt,
     shvList,
     shvNull,
     shvString,
@@ -145,7 +146,23 @@ _sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")
                     "allowed": ["nullAlias", "String"],
                 },
             },
-            NamedSet(_nullAlias, SHVTypeList("somelist", _nullAlias, shvString)),
+            NamedSet(
+                _nullAlias,
+                SHVTypeList("somelist", _nullAlias, shvString),
+            ),
+        ),
+        (
+            {
+                "somelist": {
+                    "type": "List",
+                    "allowed": ["Int", "String"],
+                    "minlen": 1,
+                    "maxlen": 8,
+                },
+            },
+            NamedSet(
+                SHVTypeList("somelist", shvInt, shvString, minlen=1, maxlen=8),
+            ),
         ),
         (
             {

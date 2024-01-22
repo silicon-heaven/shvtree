@@ -321,7 +321,7 @@ class _TypesLoader:
         if not isinstance(minlen, int):
             raise SHVTreeValueError(location + ["minlen"], "Expected integer")
         maxlen = attrs.pop("maxlen", None)
-        if maxlen is not None and isinstance(maxlen, int):
+        if maxlen is not None and not isinstance(maxlen, int):
             raise SHVTreeValueError(location + ["maxlen"], "Expected integer")
         res = SHVTypeList(name, minlen=minlen, maxlen=maxlen)
         self.types.add(res)
