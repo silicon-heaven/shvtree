@@ -4,7 +4,6 @@ from . import namedset
 from .types import (
     SHVTypeBase,
     SHVTypeBlob,
-    SHVTypeBool,
     SHVTypeDateTime,
     SHVTypeDecimal,
     SHVTypeDouble,
@@ -13,10 +12,10 @@ from .types import (
     SHVTypeOneOf,
     SHVTypeString,
     shvAny,
+    shvBool,
     shvNull,
 )
 
-shvBool = SHVTypeBool()
 shvInt = SHVTypeInt("Int")
 shvInt8 = SHVTypeInt("Int8", minimum=-(2**7), maximum=2**7 - 1)
 shvInt16 = SHVTypeInt("Int16", minimum=-(2**15), maximum=2**15 - 1)

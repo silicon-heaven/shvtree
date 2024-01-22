@@ -131,6 +131,9 @@ class SHVTypeBool(SHVTypeBase):
         return 1
 
 
+shvBool = SHVTypeBool()  # Must be defined here for reuse not in types_builtins.py
+
+
 class SHVTypeInt(SHVTypeBase):
     """SHV Integer type."""
 
@@ -581,26 +584,211 @@ class SHVTypeEnum(SHVTypeBase, dict[str, int]):
         return self.integer().chainpack_bytes()
 
 
-class SHVTypeBitfield(SHVTypeEnum):
-    """Type that combines multiple boolean values to one integer.
+SHVTypeBitfieldCompatible = SHVTypeNull | SHVTypeBool | SHVTypeEnum | SHVTypeInt
+SHVBitfieldCompatible = None | bool | int
 
-    The type is based on Enum and transmitted using builtin usigned integer.
 
-    The intended usage of this type is to pass multiple booleans at once with
-    little overhead.
+class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
+    """Type that combines multiple integer based values to one integer.
+
+    The value is transmitted using usigned integer.
+
+    This type is pretty close to the :class:`SHVTypeTuple` with exception that
+    it allows only limited types and that integer is more compact way to
+    transmit data over list.
+
+    The suggested but not enforced maximum size of the Bitfield is 64 bits. SHV
+    can potentially work even with bigger values but working with them is harder
+    on multiple platforms and for bigger values you should rather split it to
+    multiple bitfields.
     """
+
+    def __init__(
+        self,
+        name: str,
+        *items: SHVTypeBitfieldCompatible,
+        enum: None | SHVTypeEnum = None,
+        strict: bool = True,
+    ) -> None:
+        """Initialize new Bitfield type.
+
+        :param fields: Declaration of types of the field in the tuple. You can
+          use :param:`shvNull` to insert holes (one null for one bit).
+        :param enum: Enum used to assign aliases to the bits. Note that this
+          does not directly map to field but rather to their indexes.
+        :param strict: Interpret ``shvNull`` and upper bits as "must be zero"
+          instead of ignoring such bits.
+        """
+        super().__init__(name)
+        self.extend(items)
+        self.enum: SHVTypeEnum | None = enum
+        self.strict: bool = strict
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            hasattr(other, "enum") and other.enum == self.enum and super().__eq__(other)
+        )
+
+    def types(
+        self,
+    ) -> collections.abc.Iterator[tuple[SHVTypeBitfieldCompatible, int, int]]:
+        """Iterate over types with their start bit and bit size.
+
+        This skips Nulls because they are considered as holes in bitfield.
+
+        :return: Iterator over all types in bitfield. Every type is yielded as
+          tuple of the type, starting bit and bit span of the type.
+        """
+        i = 0
+        for tp in self:
+            if tp is shvNull:
+                i += 1
+                continue
+            siz = self.type_span(tp)
+            assert siz is not None
+            yield tp, i, siz
+            i += siz
+
+    def get(self, bit: int | str) -> SHVTypeBitfieldCompatible:
+        """Get type that starts on given bit in the bitfield.
+
+        :param bit: Bit index (where 0 is the first bit) or alias from enum.
+        :return: Type on the given bit.
+        :raise ValueError: if there is no type starting on that bit.
+        :raise KeyError: in case ``bit`` is string that is not in enum.
+        """
+        if isinstance(bit, str):
+            if self.enum is None:
+                raise KeyError("No enum provided")
+            bit = self.enum[bit]
+        for tp, pos, _ in self.types():
+            if pos == bit:
+                return tp
+            if pos > bit:
+                break
+        raise ValueError(f"No type starts on bit {bit}")
+
+    def set(self, bit: int | str, value: SHVTypeBitfieldCompatible) -> None:
+        """Insert type to start at given bit.
+
+        This will fail if there is overlap with existing type that is not
+        ``shvNull``.
+
+        :param bit: Bit index (where 0 is the first bit) or alias from enum.
+        :param value: Type to be inserted to that type.
+        :raise ValueError: if this would replace or overlap some other existing
+          type.
+        """
+        if isinstance(bit, str):
+            if self.enum is None:
+                raise KeyError("No enum provided")
+            bit = self.enum[bit]
+        valsiz = self.type_span(value)
+        if valsiz is None:
+            raise ValueError("Type can't be included in bitfield.")
+        old = list(self)
+        self.clear()
+        offset = 0
+        for item in old:
+            if offset == bit:
+                if item is not shvNull:
+                    raise ValueError("Replacement is not allowed")
+                self.append(value)
+            elif bit < offset < (bit + valsiz):
+                if item is not shvNull:
+                    raise ValueError("Replacement is not allowed")
+            else:
+                self.append(item)
+            offset += self.type_span(item) or 0
+        if offset <= bit:
+            self.extend([shvNull] * (bit - offset))
+            self.append(value)
+
+    def bitsize(self) -> int:
+        """Calculate number of bits needed for this bitfield.
+
+        :result: Number of bits.
+        """
+        return sum(self.type_span(tp) or 0 for tp in self)
 
     def validate(self, value: object) -> bool:
         if not isinstance(value, int):
             return False
-        i = 0
-        while value:
-            if (value >> i) & 0x1:
-                if i not in self.values():
-                    return False
-                value -= 0x1 << i
-            i += 1
+        try:
+            self.interpret(value)
+        except ValueError:
+            return False
         return True
+
+    def interpret(
+        self,
+        value: int,
+    ) -> collections.abc.Sequence[SHVBitfieldCompatible]:
+        """Interpret the given integer value by this bitfield.
+
+        :param value: Integer to be interpreted.
+        :return: List of values interpreted from integer based on this type.
+        """
+        res: list[SHVBitfieldCompatible] = []
+        pos = siz = 0
+        for tp, pos, siz in self.types():
+            v = (value >> pos) & (2**siz - 1)
+            value &= ~((2**siz - 1) << pos)
+            assert tp is not shvNull
+            if tp is shvBool:
+                res.append(v != 0)
+            elif isinstance(tp, SHVTypeEnum):
+                if not tp.validate(v):
+                    raise ValueError(
+                        f"Bits from {pos} to {pos + siz} doesn't match enum values"
+                    )
+                res.append(v)
+            elif isinstance(tp, SHVTypeInt):
+                if not tp.validate(v):
+                    raise ValueError(
+                        f"Bits from {pos} to {pos + siz} doesn't match integer limits"
+                        + " required by the type"
+                    )
+                res.append(v)
+            else:
+                raise ValueError(f"Can't interpret type: {tp!r}")
+        if self.strict and value != 0:
+            raise ValueError(f"These unsued bits were set: {bin(value)}")
+        return res
+
+    @staticmethod
+    def type_span(tp: SHVTypeBase) -> int | None:
+        """Calculate the bits span needed for this type.
+
+        :return: Number of bits needed to carry this type in bitfield or
+          ``None`` if that is not supported for this type.
+        """
+        if tp in (shvNull, shvBool):
+            return 1
+        if isinstance(tp, SHVTypeEnum):
+            tp = tp.integer()
+        if isinstance(tp, SHVTypeInt):
+            if tp.unsigned and tp.maximum is not None:
+                return tp.maximum.bit_length()
+        return None
+
+    @classmethod
+    def from_enum(cls, name: str, enum: SHVTypeEnum) -> typing.Self:
+        """Generate bitfield from given enum.
+
+        It is common to create bitfields just with booleans and in such case the
+        regular initialization can get pretty complex for not reason. This
+        simplifies this use case and allows instead bitfield to be generated
+        directly from enum.
+
+        :param name: Name of the new bitfield type.
+        :param enum: The enum bitfield should be generated for.
+        :return: New bitfield type.
+        """
+        res = cls(name, enum=enum)
+        for i in set(enum.values()):
+            res.set(i, shvBool)
+        return res
 
 
 class SHVTypeList(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
@@ -674,21 +862,23 @@ class SHVTypeListAny(SHVTypeList):
 class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
     """The List type that expects specific types on specific indexes.
 
-    Compared with Enum or IMap the empty indexes are not allowed here. You can
-    use Enum to assign aliases to the indexes.
+    Tuples are always at most of the given size. The only exception are tuples
+    with *Null*s at the end of list. Such nulls can be left out.  This type
+    doesn't allow holes but you can use *Null* as a hole.
+
+    You can use Enum to assign aliases to the indexes.
     """
 
     def __init__(
-        self, name: str, *fields: SHVTypeBase, enum: None | SHVTypeEnum = None
+        self, name: str, *items: SHVTypeBase, enum: None | SHVTypeEnum = None
     ) -> None:
         """Initialize new Tuple type.
 
-        :param fields: Keywords declaring name and type of the field in the
-            tuple.
+        :param items: Declaration of types of the field in the tuple.
         :param enum: Enum used to assign aliases to the fields in the tuple.
         """
         super().__init__(name)
-        self.extend(fields)
+        self.extend(items)
         self.enum: SHVTypeEnum | None = enum
 
     def __eq__(self, other: object) -> bool:

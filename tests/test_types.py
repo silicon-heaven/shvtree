@@ -4,8 +4,39 @@ import decimal
 
 import pytest
 
-from shvtree import *
-from shvtree import SHVTypeInt, types
+from shvtree import (
+    SHVTypeBitfield,
+    SHVTypeBlob,
+    SHVTypeDecimal,
+    SHVTypeDouble,
+    SHVTypeEnum,
+    SHVTypeIMap,
+    SHVTypeInt,
+    SHVTypeList,
+    SHVTypeMap,
+    SHVTypeOneOf,
+    SHVTypeString,
+    shvAny,
+    shvBlob,
+    shvBool,
+    shvDateTime,
+    shvDecimal,
+    shvDouble,
+    shvInt,
+    shvInt8,
+    shvInt16,
+    shvInt32,
+    shvInt64,
+    shvList,
+    shvNull,
+    shvString,
+    shvUInt,
+    shvUInt8,
+    shvUInt16,
+    shvUInt32,
+    shvUInt64,
+    types,
+)
 
 
 @pytest.mark.parametrize(
@@ -227,16 +258,72 @@ def test_enum_validate(value, res):
     assert enum.validate(value) == res
 
 
+@pytest.mark.parametrize(
+    "tp,span",
+    (
+        (shvBool, 1),
+        (shvNull, 1),
+        (SHVTypeEnum("foo", "one", "two"), 1),
+        (shvUInt8, 8),
+        (SHVTypeInt("foo", minimum=4, maximum=17), 5),
+        (SHVTypeInt("foo", maximum=17), None),
+        (shvString, None),
+    ),
+)
+def test_bitfield_type_span(tp, span):
+    """Check our implementation of bitfield."""
+    assert SHVTypeBitfield.type_span(tp) == span
+
+
 def test_bitfield():
     """Check our implementation of bitfield."""
-    bitfield = SHVTypeBitfield("bitfoo", "one", "two", four=4, last=63)
+    uint = SHVTypeInt("bitvarInt", minimum=1, maximum=6)
+    bitfield = SHVTypeBitfield("bitvar", shvBool, shvNull, uint, shvUInt8)
+    assert bitfield.name == "bitvar"
+    assert bitfield.bitsize() == 13
+    assert bitfield.get(0) == shvBool
+    assert bitfield.get(2) == uint
+    with pytest.raises(ValueError):
+        _ = bitfield.get(3)
+    assert bitfield.get(5) == shvUInt8
+
+
+def test_bitfield_from_enum():
+    """Check our implementation of bitfield initialzied from enum."""
+    enum = SHVTypeEnum("bitfooEnum", "one", "two", four=4, last=63)
+    bitfield = SHVTypeBitfield.from_enum("bitfoo", enum)
     assert bitfield.name == "bitfoo"
-    assert bitfield["one"] == 0
-    assert bitfield["two"] == 1
-    assert bitfield["four"] == 4
-    assert bitfield["last"] == 63
+    assert bitfield.bitsize() == 64
+    assert bitfield.get("one") == shvBool
+    assert bitfield.get("two") == shvBool
+    assert bitfield.get(1) == shvBool
+    assert bitfield.get("four") == shvBool
+    assert bitfield.get("last") == shvBool
+    assert bitfield.get("last") == shvBool
     with pytest.raises(KeyError):
-        _ = bitfield["none"]
+        _ = bitfield.get("none")
+    with pytest.raises(ValueError):
+        _ = bitfield.get(64)
+    with pytest.raises(ValueError):
+        _ = bitfield.get(-1)
+
+
+@pytest.mark.parametrize(
+    "value,res",
+    (
+        (0x2, [False, 1, False, False]),
+        (0x3, [True, 1, False, False]),
+        (0x4, [False, 2, False, False]),
+        (0xD, [True, 6, False, False]),
+        (0x800000000000000C, [False, 6, False, True]),
+    ),
+)
+def test_bitfield_interpret(value, res):
+    bitfield = SHVTypeBitfield(
+        "bitfield", shvBool, SHVTypeInt("foo", minimum=1, maximum=6), shvNull, shvBool
+    )
+    bitfield.set(63, shvBool)
+    assert bitfield.interpret(value) == res
 
 
 @pytest.mark.parametrize(
@@ -245,30 +332,19 @@ def test_bitfield():
         (0x0, True),
         (0x1, True),
         (0x3, True),
-        (0x4, False),
-        (0x5, False),
-        (0x10, True),
-        (0x11, True),
-        (0x8000000000000013, True),
-        (0x9000000000000013, False),
+        (0x11, False),
+        (0x21, True),
+        (0x8000000000000000, True),
         ("one", False),
     ),
 )
 def test_bitfield_value(value, res):
-    bitfield = SHVTypeBitfield("foo", "one", "two", four=4, last=63)
+    bitfield = SHVTypeBitfield(
+        "foo", shvBool, SHVTypeInt("foo", minimum=0, maximum=6), shvNull, shvBool
+    )
+    bitfield.set(63, shvBool)
+    print(list(bitfield.types()))
     assert bitfield.validate(value) == res
-
-
-def test_bitfield_modify():
-    """Check that we can modify bitfield after creation."""
-    bitfield = SHVTypeBitfield("foo")
-    with pytest.raises(KeyError):
-        _ = bitfield["three"]
-    bitfield["three"] = 3
-    assert bitfield["three"] == 3
-    del bitfield["three"]
-    with pytest.raises(KeyError):
-        _ = bitfield["three"]
 
 
 def test_list():

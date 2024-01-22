@@ -39,7 +39,7 @@ class SHVNode(namedset.Named):
         name: str,
         dtype: SHVTypeBase,
         readonly: bool = False,
-        signal: bool | None = None,
+        signal: bool | str | None = None,
         description: str = "",
     ) -> SHVNode:
         """Initialize new SHV node that has property value assigned to it.
@@ -48,7 +48,8 @@ class SHVNode(namedset.Named):
         :param dtype: Type of the property.
         :param readonly: Sets that property is read-only.
         :param signal: Sets that property change is signaled. If ``None`` is
-          passed then change is signaled only for non-readonly property.
+          passed then change is signaled only for non-readonly property. If
+          string is passed then given name of the signal is used.
         :param description: Short text describing the node.
         :returns: SHVNode instance
         """

@@ -32,7 +32,7 @@ types:
 
   errors:
     type: Bitfield
-    values:
+    enum:
       - outOfRange
       - lowPower
 
@@ -65,7 +65,7 @@ types:
   propTuple:
     type: Tuple
     enum: propEnum
-    fields: &fprops
+    items: &fprops
       - Bool
       - Int
       - UInt

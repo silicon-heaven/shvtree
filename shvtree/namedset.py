@@ -37,7 +37,9 @@ class NamedSet(collections.abc.Mapping[str, NamedT]):
     def add(self, obj: NamedT) -> None:
         """Add given object to the set."""
         if obj.name in self:
-            raise ValueError("Object of this name is already present in the set.")
+            raise ValueError(
+                f"Object with name '{obj.name}' is already present in the set."
+            )
         self.__namedset.append(obj)
 
     def __contains__(self, item: object) -> bool:
@@ -69,5 +71,5 @@ class NamedSet(collections.abc.Mapping[str, NamedT]):
         for obj in nset.values():
             self.add(obj)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return str({value.name: str(value) for value in self.__namedset})

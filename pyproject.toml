@@ -1,19 +1,19 @@
 [project]
-name = "pyshvtree"
+name = "shvtree"
 version = "0.0.0"
 description = "Silicon Heaven Tree"
 readme = "README.rst"
 license = {file = "LICENSE"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-  "pyshv >= 0.3.0",
+  "pyshv >= 0.4.0",
   "ruamel.yaml",
   "asyncinotify",
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.com/elektroline-predator/pyshvtree"
-"Bug Tracker" = "https://gitlab.com/elektroline-predator/pyshvtree/-/issues"
+"Homepage" = "https://gitlab.com/elektroline-predator/shvtree"
+"Bug Tracker" = "https://gitlab.com/elektroline-predator/shvtree/-/issues"
 
 [project.optional-dependencies]
 docs = [

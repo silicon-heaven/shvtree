@@ -16,6 +16,7 @@ from .types import (
     SHVTypeAlias,
     SHVTypeBase,
     SHVTypeBitfield,
+    SHVTypeBitfieldCompatible,
     SHVTypeBlob,
     SHVTypeConstant,
     SHVTypeDecimal,
@@ -72,21 +73,21 @@ def load_json(stream: str | typing.IO) -> SHVTree:
     )
 
 
-def load_raw(data: collections.abc.Mapping[str, typing.Any]) -> SHVTree:
+def load_raw(data: typing.Any) -> SHVTree:
     """Construct SHVTree out of provided basic representation.
 
     :param data: SHV Tree representation in plain Python types.
     :returns: instace of SHVTree.
     """
+    if not isinstance(data, collections.abc.Mapping):
+        raise SHVTreeValueError([], "Invalid format")
     data = dict(data)  # copy so we can use pop
 
     # Load types
-    dtypes = data.pop("types", {})
-    shvtypes = load_types(dtypes if dtypes is not None else {})
+    shvtypes = load_types(data.pop("types", {}))
 
     # Load nodes
-    dnodes = data.pop("nodes", None)
-    shvnodes = load_nodes(dnodes if dnodes is not None else {}, shvtypes)
+    shvnodes = load_nodes(data.pop("nodes", {}), shvtypes)
 
     if data:
         keys = ", ".join(data.keys())
@@ -95,13 +96,338 @@ def load_raw(data: collections.abc.Mapping[str, typing.Any]) -> SHVTree:
     return SHVTree(types=shvtypes, nodes=shvnodes)
 
 
+class _TypesLoader:
+    def __init__(self, data: collections.abc.Mapping[str, typing.Any]) -> None:
+        self.types: namedset.NamedSet[SHVTypeBase] = namedset.NamedSet()
+        self.to_load = set(data.keys())
+        self.data = data
+
+    def load_all(self) -> namedset.NamedSet[SHVTypeBase]:
+        while self.to_load:
+            self.load(self.to_load.pop())
+        return self.types
+
+    def get_type(self, location: list[str], name: str | None) -> SHVTypeBase:
+        # Some formats such as YAML allow None to be loaded when Null or
+        # other like that strings are used. We support this and consider it
+        # to be shvNull type. Otherwise we would have to use `"Null"` instead of
+        # just plain `Null`.
+        if name is None:
+            return shvNull
+        if name in shvBuiltins:
+            return shvBuiltins[name]
+        if name in self.types:
+            return self.types[name]
+        if name in self.to_load:
+            self.load(name)
+            return self.types[name]
+        # Note: This can also be due to the implementation error. Type loaders
+        # shnould always add them self to ``self.types`` before they call this
+        # method to prevent from this confusing error showing up.
+        raise SHVTreeValueError(location, f"Invalid type '{name}' referenced.")
+
+    def load(self, name: str) -> None:
+        location = ["types", name]
+        if name in shvBuiltins:
+            raise SHVTreeValueError(location, "Redefining builtin types is not allowed")
+        self.to_load.discard(name)
+        value = self.data[name]
+        if isinstance(value, str):
+            alias = SHVTypeAlias(name)
+            self.types.add(alias)
+            alias.type = self.get_type(location, value)
+        elif isinstance(value, collections.abc.Sequence):
+            oneof = SHVTypeOneOf(name)
+            self.types.add(oneof)
+            oneof.update(self.get_type(location, n) for n in value)
+        elif isinstance(value, collections.abc.Mapping):
+            attrs = {**value}
+            if "type" not in attrs:
+                raise SHVTreeValueError(location, "Missing 'type'")
+            self.loaders.get(attrs.pop("type"), type(self)._load_invalid)(
+                self, location, name, attrs
+            )
+            if attrs:
+                raise SHVTreeValueError(
+                    location, f"Invalid keys: {', '.join(attrs.keys())}"
+                )
+        else:
+            raise SHVTreeValueError(
+                location, f"Invalid type description format: {value}"
+            )
+        assert name in self.types
+
+    def _load_invalid(self, location: list[str], name: str, attrs: dict) -> None:
+        raise SHVTreeValueError(location, f"Invalid type of the '{name}' type.")
+
+    def _load_int(self, location: list[str], name: str, attrs: dict) -> None:
+        minimum = attrs.pop("minimum", None)
+        if minimum is not None and not isinstance(minimum, int):
+            raise SHVTreeValueError(location + ["minimum"], "Expected integer")
+        maximum = attrs.pop("maximum", None)
+        if maximum is not None and not isinstance(maximum, int):
+            raise SHVTreeValueError(location + ["maximum"], "Expected integer")
+        multiple_of = attrs.pop("multipleOf", None)
+        if multiple_of is not None and not isinstance(multiple_of, int):
+            raise SHVTreeValueError(location + ["multiple_of"], "Expected integer")
+        unsigned = attrs.pop("unsigned", None)
+        if unsigned is not None and not isinstance(multiple_of, bool):
+            raise SHVTreeValueError(location + ["unsigned"], "Expected bool")
+        self.types.add(SHVTypeInt(name, minimum, maximum, multiple_of, unsigned))
+
+    def _load_double(self, location: list[str], name: str, attrs: dict) -> None:
+        minimum = attrs.pop("minimum", None)
+        if minimum is not None and not isinstance(minimum, (int, float)):
+            raise SHVTreeValueError(location + ["minimum"], "Expected float")
+        exclusive_minimum = attrs.pop("exclusiveMinimum", None)
+        if exclusive_minimum is not None and not isinstance(
+            exclusive_minimum, (int, float)
+        ):
+            raise SHVTreeValueError(location + ["exclusive_minimum"], "Expected float")
+        maximum = attrs.pop("maximum", None)
+        if maximum is not None and not isinstance(maximum, (int, float)):
+            raise SHVTreeValueError(location + ["maximum"], "Expected float")
+        exclusive_maximum = attrs.pop("exclusiveMaximum", None)
+        if exclusive_maximum is not None and not isinstance(
+            exclusive_maximum, (int, float)
+        ):
+            raise SHVTreeValueError(location + ["exclusive_maximum"], "Expected float")
+        multiple_of = attrs.pop("multipleOf", None)
+        if multiple_of is not None and not isinstance(multiple_of, (int, float)):
+            raise SHVTreeValueError(location + ["multiple_of"], "Expected float")
+        self.types.add(
+            SHVTypeDouble(
+                name,
+                minimum,
+                maximum,
+                exclusive_minimum,
+                exclusive_maximum,
+                multiple_of,
+            )
+        )
+
+    def _load_decimal(self, location: list[str], name: str, attrs: dict) -> None:
+        minimum = attrs.pop("minimum", None)
+        if minimum is not None:
+            if not isinstance(minimum, (int, float, str)):
+                raise SHVTreeValueError(location + ["minimum"], "Expected decimal")
+            minimum = decimal.Decimal(minimum)
+        maximum = attrs.pop("maximum", None)
+        if maximum is not None:
+            if not isinstance(maximum, (int, float, str)):
+                raise SHVTreeValueError(location + ["maximum"], "Expected decimal")
+            maximum = decimal.Decimal(maximum)
+        self.types.add(SHVTypeDecimal(name, minimum, maximum))
+
+    def _load_string(self, location: list[str], name: str, attrs: dict) -> None:
+        length = attrs.pop("length", None)
+        if length is not None and not isinstance(length, int):
+            raise SHVTreeValueError(location + ["length"], "Expected integer")
+        min_length = attrs.pop("minLength", length)
+        if min_length is not None and not isinstance(min_length, int):
+            raise SHVTreeValueError(location + ["min_length"], "Expected integer")
+        max_length = attrs.pop("maxLength", length)
+        if max_length is not None and not isinstance(max_length, int):
+            raise SHVTreeValueError(location + ["max_length"], "Expected integer")
+        pattern = attrs.pop("pattern", None)
+        if pattern is not None and not isinstance(pattern, str):
+            raise SHVTreeValueError(location + ["pattern"], "Expected string")
+        self.types.add(SHVTypeString(name, min_length, max_length, pattern))
+
+    def _load_blob(self, location: list[str], name: str, attrs: dict) -> None:
+        length = attrs.pop("length", None)
+        if length is not None and not isinstance(length, int):
+            raise SHVTreeValueError(location + ["length"], "Expected integer")
+        min_length = attrs.pop("minLength", length)
+        if min_length is not None and not isinstance(min_length, int):
+            raise SHVTreeValueError(location + ["min_length"], "Expected integer")
+        max_length = attrs.pop("maxLength", length)
+        if max_length is not None and not isinstance(max_length, int):
+            raise SHVTreeValueError(location + ["max_length"], "Expected integer")
+        self.types.add(SHVTypeBlob(name, min_length, max_length))
+
+    def _load_enum(self, location: list[str], name: str, attrs: dict) -> None:
+        res = SHVTypeEnum(name)
+        for dkey, i in self._load_enumlike(
+            location + ["values"], attrs.pop("values", [])
+        ):
+            res[dkey] = i
+        self.types.add(res)
+
+    def _load_subenum(
+        self, location: list[str], name: str, enum: typing.Any
+    ) -> SHVTypeEnum:
+        if isinstance(enum, str):
+            tp = self.get_type(location, enum)
+            if not isinstance(tp, SHVTypeEnum):
+                raise SHVTreeValueError(location, f"Type '{enum}' is not Enum")
+            return tp
+        res = SHVTypeEnum(f"{name}Enum")
+        for dkey, i in self._load_enumlike(location, enum):
+            res[dkey] = i
+        self.types.add(res)
+        return res
+
+    @staticmethod
+    def _load_enumlike(
+        location: list[str], values: typing.Any
+    ) -> collections.abc.Iterator[tuple[str, int]]:
+        """Interpret value as a enum value like list.
+
+        This includes common interpretation of integers and nulls as holes and
+        thus such values are skipped.
+        """
+        if not isinstance(values, collections.abc.Sequence):
+            raise SHVTreeValueError(location, "Invalid type, list expected.")
+        nexti = 0
+        for val in values:
+            if val is None:
+                nexti += 1
+            elif isinstance(val, int):
+                nexti += val - 1
+            elif isinstance(val, str):
+                yield val, nexti
+                nexti += 1
+            elif isinstance(val, collections.abc.Mapping):
+                for key, kv in val.items():
+                    if not isinstance(kv, int):
+                        raise SHVTreeValueError(location + [key], "Expected int!")
+                    yield key, kv
+                    nexti = kv + 1
+            else:
+                raise SHVTreeValueError(location, f"Invalid value specifier: {val!r}")
+
+    def _load_bitfield(self, location: list[str], name: str, attrs: dict) -> None:
+        res = SHVTypeBitfield(name)
+        self.types.add(res)
+        rtypes = attrs.pop("types", None)
+        if rtypes is not None:
+            for tp, i in self._load_enumlike(location + ["types"], rtypes):
+                rtp = self.get_type(location + ["types"], tp)
+                if SHVTypeBitfield.type_span(rtp) is None:
+                    raise SHVTreeValueError(
+                        location + ["types"], f"Type {tp} can't be included in bitfield"
+                    )
+                res.set(i, typing.cast(SHVTypeBitfieldCompatible, tp))
+        if (renum := attrs.pop("enum", None)) is not None:
+            enum = self._load_subenum(location + ["enum"], name, renum)
+            if rtypes is None:
+                res = SHVTypeBitfield.from_enum(name, enum)
+                del self.types[name]
+                self.types.add(res)
+
+    def _load_list(self, location: list[str], name: str, attrs: dict) -> None:
+        minlen = attrs.pop("minlen", 0)
+        if not isinstance(minlen, int):
+            raise SHVTreeValueError(location + ["minlen"], "Expected integer")
+        maxlen = attrs.pop("maxlen", None)
+        if maxlen is not None and isinstance(maxlen, int):
+            raise SHVTreeValueError(location + ["maxlen"], "Expected integer")
+        res = SHVTypeList(name, minlen=minlen, maxlen=maxlen)
+        self.types.add(res)
+
+        allowed = attrs.pop("allowed", None)  # Loaded in second pass
+        if isinstance(allowed, str):
+            allowed = [allowed]
+        if not isinstance(allowed, collections.abc.Sequence):
+            raise SHVTreeValueError(location + ["allowed"], "Expected list of types")
+        for t in allowed:
+            if not isinstance(t, str):
+                raise SHVTreeValueError(location + ["allowed"], "Expected string")
+            res.add(self.get_type(location + ["allowed"], t))
+
+    def _load_tuple(self, location: list[str], name: str, attrs: dict) -> None:
+        res = SHVTypeTuple(name)
+        self.types.add(res)
+        # TODO check fields
+        for tp in attrs.pop("items", []):
+            res.append(self.get_type(location + ["items"], tp))
+        if (enum := attrs.pop("enum", None)) is not None:
+            res.enum = self._load_subenum(location + ["enum"], name, enum)
+
+    def _load_map(self, location: list[str], name: str, attrs: dict) -> None:
+        res = SHVTypeMap(name)
+        self.types.add(res)
+        fields = attrs.pop("fields", {})
+        if not isinstance(fields, collections.abc.Mapping):
+            raise SHVTreeValueError(location + ["fields"], "Expected mapping")
+        for key, value in fields.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                raise SHVTreeValueError(
+                    location + ["fields", str(key)], "Expected string"
+                )
+            res[key] = self.get_type(location + ["fields"], value)
+
+    def _load_imap(self, location: list[str], name: str, attrs: dict) -> None:
+        res = SHVTypeIMap(name)
+        self.types.add(res)
+        if (enum := attrs.pop("enum", None)) is not None:
+            res.enum = self._load_subenum(location + ["enum"], name, enum)
+        fields = attrs.pop("fields", [])
+        if isinstance(fields, collections.abc.Mapping):
+            for dkey, dvalue in fields.items():
+                if not isinstance(dkey, str):
+                    raise SHVTreeValueError(location + ["fields"], "Key must be string")
+                res[dkey] = self.get_type(location + ["fields"], dvalue)
+        elif isinstance(fields, collections.abc.Sequence):
+            nexti = 0
+            for dkey in fields:
+                if isinstance(dkey, str):
+                    res[nexti] = self.get_type(location + ["fields"], dkey)
+                    nexti += 1
+                elif isinstance(dkey, collections.abc.Mapping):
+                    for key, value in dkey.items():
+                        res[value] = self.get_type(location + ["fields", key], key)
+                        nexti = value + 1
+                else:
+                    raise SHVTreeValueError(
+                        location + ["fields"], "Invalid fields format"
+                    )
+        else:
+            raise SHVTreeValueError(location + ["fields"], "Invalid format")
+
+    def _load_constant(self, location: list[str], name: str, attrs: dict) -> None:
+        value = attrs.pop("value", None)
+        if value is None:
+            raise SHVTreeValueError(location + ["value"], "Use shvNull instead.")
+        if isinstance(value, str):
+            try:
+                value = shv.Cpon.unpack(value)
+            except (ValueError, EOFError):
+                pass
+        if not shvAny.validate(value):
+            raise SHVTreeValueError(location + ["value"], f"Invalid value: {value}")
+        self.types.add(SHVTypeConstant(name, value))
+
+    loaders: collections.abc.Mapping[str, collections.abc.Callable] = {
+        "Int": _load_int,
+        "Double": _load_double,
+        "Decimal": _load_decimal,
+        "String": _load_string,
+        "Blob": _load_blob,
+        "Enum": _load_enum,
+        "Bitfield": _load_bitfield,
+        "List": _load_list,
+        "Tuple": _load_tuple,
+        "Map": _load_map,
+        "IMap": _load_imap,
+        "Constant": _load_constant,
+    }
+
+
+def load_types(
+    data: typing.Any,
+) -> namedset.NamedSet[SHVTypeBase]:
+    """Load set of types from generic representation."""
+    if not isinstance(data, collections.abc.Mapping):
+        raise SHVTreeValueError(["types"], "Invalid format")
+    return _TypesLoader(data).load_all()
+
+
 def _get_type(
     location: list[str], types: namedset.NamedSet[SHVTypeBase], name: str | None
 ) -> SHVTypeBase:
     if name is None:
-        # Some formats such as YAML allow None to be loaded when Null or
-        # other like that strings are used. We support this and consider it
-        # to be shvNull type.
         return shvNull
     if name in shvBuiltins:
         return shvBuiltins[name]
@@ -110,367 +436,8 @@ def _get_type(
     return types[name]
 
 
-def _get_enum(
-    location: list[str], types: namedset.NamedSet[SHVTypeBase], name: str | None
-) -> SHVTypeEnum:
-    tp = _get_type(location, types, name)
-    if not isinstance(tp, SHVTypeEnum):
-        raise SHVTreeValueError(location, f"Invalid type used as enum '{tp.name}'")
-    return tp
-
-
-def _load_types_int(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeInt:
-    minimum = attrs.pop("minimum", None)
-    if minimum is not None:
-        minimum = int(minimum)
-    maximum = attrs.pop("maximum", None)
-    if maximum is not None:
-        maximum = int(maximum)
-    multiple_of = attrs.pop("multipleOf", None)
-    if multiple_of is not None:
-        multiple_of = int(multiple_of)
-    unsigned = attrs.pop("unsigned", None)
-    if unsigned is not None:
-        unsigned = bool(unsigned)
-    return SHVTypeInt(name, minimum, maximum, multiple_of, unsigned)
-
-
-def _load_types_double(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeDouble:
-    minimum = attrs.pop("minimum", None)
-    if minimum is not None:
-        minimum = float(minimum)
-    exclusive_minimum = attrs.pop("exclusiveMinimum", None)
-    if exclusive_minimum is not None:
-        exclusive_minimum = float(exclusive_minimum)
-    maximum = attrs.pop("maximum", None)
-    if maximum is not None:
-        maximum = float(maximum)
-    exclusive_maximum = attrs.pop("exclusiveMaximum", None)
-    if exclusive_maximum is not None:
-        exclusive_maximum = float(exclusive_maximum)
-    multiple_of = attrs.pop("multipleOf", None)
-    if multiple_of is not None:
-        multiple_of = float(multiple_of)
-    return SHVTypeDouble(
-        name, minimum, maximum, exclusive_minimum, exclusive_maximum, multiple_of
-    )
-
-
-def _load_types_decimal(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeDecimal:
-    minimum = attrs.pop("minimum", None)
-    if minimum is not None:
-        minimum = decimal.Decimal(minimum)
-    maximum = attrs.pop("maximum", None)
-    if maximum is not None:
-        maximum = decimal.Decimal(maximum)
-    return SHVTypeDecimal(name, minimum, maximum)
-
-
-def _load_types_string(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeString:
-    min_length = attrs.pop("minLength", None)
-    if min_length is not None:
-        min_length = int(min_length)
-    max_length = attrs.pop("maxLength", None)
-    if max_length is not None:
-        max_length = int(max_length)
-    pattern = attrs.pop("pattern", None)
-    if pattern is not None:
-        pattern = str(pattern)
-    return SHVTypeString(name, min_length, max_length, pattern)
-
-
-def _load_types_blob(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeBlob:
-    length = attrs.pop("length", None)
-    if length is not None:
-        min_length = length
-        max_length = length
-    else:
-        min_length = attrs.pop("minLength", None)
-        if min_length is not None:
-            min_length = int(min_length)
-        max_length = attrs.pop("maxLength", None)
-        if max_length is not None:
-            max_length = int(max_length)
-    return SHVTypeBlob(name, min_length, max_length)
-
-
-def _load_types_enum_generic(
-    location: list[str], obj: SHVTypeEnum, attrs: collections.abc.MutableMapping
-) -> None:
-    nexti = 0
-    for dkey in attrs.pop("values", []):
-        if isinstance(dkey, collections.abc.Mapping):
-            for key, value in dkey.items():
-                obj[key] = value
-                nexti = value + 1
-        elif isinstance(dkey, str):
-            obj[dkey] = nexti
-            nexti += 1
-        else:
-            raise SHVTreeValueError(
-                location, f"Invalid value specifier for enum: {dkey}"
-            )
-
-
-def _load_types_enum(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeEnum:
-    res = SHVTypeEnum(name)
-    _load_types_enum_generic(location, res, attrs)
-    return res
-
-
-def _load_types_bitfield(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeBitfield:
-    res = SHVTypeBitfield(name)
-    _load_types_enum_generic(location, res, attrs)
-    return res
-
-
-def _load_types_list_1(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeList:
-    attrs.pop("allowed", None)  # Loaded in second pass
-    return SHVTypeList(
-        name,
-        minlen=int(attrs.pop("minlen", 0)),
-        maxlen=int(attrs.pop("maxlen")) if "maxlen" in attrs else None,
-    )
-
-
-def _load_types_list_2(
-    location: list[str],
-    res: namedset.NamedSet[SHVTypeBase],
-    obj: SHVTypeBase,
-    attrs: collections.abc.Mapping,
-) -> None:
-    assert isinstance(obj, SHVTypeList)
-    allowed = attrs.get("allowed", [])
-    if isinstance(allowed, str):
-        allowed = [allowed]
-    elif not isinstance(allowed, collections.abc.Sequence):
-        raise SHVTreeValueError(location + ["allowed"], "Invalid format")
-    for tp in allowed:
-        obj.add(_get_type(location + ["allowed"], res, tp))
-
-
-def _load_types_tuple_1(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeTuple:
-    attrs.pop("fields", None)  # Loaded in second pass
-    attrs.pop("enum", None)  # Loaded in second pass
-    return SHVTypeTuple(name)
-
-
-def _load_types_tuple_2(
-    location: list[str],
-    res: namedset.NamedSet[SHVTypeBase],
-    obj: SHVTypeBase,
-    attrs: collections.abc.Mapping,
-) -> None:
-    assert isinstance(obj, SHVTypeTuple)
-    for tp in attrs.get("fields", []):
-        obj.append(_get_type(location + ["fields"], res, tp))
-    if (enum := attrs.get("enum", None)) is not None:
-        obj.enum = _get_enum(location + ["enum"], res, enum)
-
-
-def _load_types_map_1(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeMap:
-    attrs.pop("fields", None)  # Loaded in second pass
-    return SHVTypeMap(name)
-
-
-def _load_types_map_2(
-    location: list[str],
-    res: namedset.NamedSet[SHVTypeBase],
-    obj: SHVTypeBase,
-    attrs: collections.abc.Mapping,
-) -> None:
-    assert isinstance(obj, SHVTypeMap)
-    obj.update(
-        {
-            key: _get_type(location + [key], res, value)
-            for key, value in attrs.get("fields", {}).items()
-        }
-    )
-
-
-def _load_types_imap_1(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> SHVTypeIMap:
-    attrs.pop("fields", None)  # Loaded in second pass
-    attrs.pop("enum", None)  # Loaded in second pass
-    return SHVTypeIMap(name)
-
-
-def _load_types_imap_2(
-    location: list[str],
-    res: namedset.NamedSet[SHVTypeBase],
-    obj: SHVTypeBase,
-    attrs: collections.abc.Mapping,
-) -> None:
-    assert isinstance(obj, SHVTypeIMap)
-    if (denum := attrs.get("enum", None)) is not None:
-        obj.enum = _get_enum(location + ["enum"], res, denum)
-    fields = attrs.get("fields", [])
-    if isinstance(fields, collections.abc.Mapping):
-        for dkey, dvalue in fields.items():
-            if not isinstance(dkey, str):
-                raise SHVTreeValueError(location + ["fields"], "Key must be string")
-            obj[dkey] = _get_type(location + ["fields"], res, dvalue)
-    elif isinstance(fields, collections.abc.Sequence):
-        nexti = 0
-        for dkey in fields:
-            if isinstance(dkey, str):
-                obj[nexti] = _get_type(location + ["fields"], res, dkey)
-                nexti += 1
-            elif isinstance(dkey, collections.abc.Mapping):
-                for key, value in dkey.items():
-                    obj[value] = _get_type(location + ["fields", key], res, key)
-                    nexti = value + 1
-            else:
-                raise SHVTreeValueError(location + ["fields"], "Invalid fields format")
-    else:
-        raise SHVTreeValueError(location + ["fields"], "Invalid format")
-
-
-def _load_types_constant(
-    location: list[str],
-    name: str,
-    attrs: collections.abc.MutableMapping,
-) -> SHVTypeConstant:
-    # TODO support some type conversion
-    value = attrs.pop("value", None)
-    if value is None:
-        raise SHVTreeValueError(location + ["value"], "Use shvNull instead.")
-    if not shvAny.validate(value):
-        raise SHVTreeValueError(location + ["value"], f"Invalid value: {value}")
-    return SHVTypeConstant(name, value)
-
-
-_load_types: dict[
-    str, typing.Callable[[list[str], str, collections.abc.MutableMapping], SHVTypeBase]
-] = {
-    "Int": _load_types_int,
-    "Double": _load_types_double,
-    "Decimal": _load_types_decimal,
-    "String": _load_types_string,
-    "Blob": _load_types_blob,
-    "Enum": _load_types_enum,
-    "Bitfield": _load_types_bitfield,
-    "List": _load_types_list_1,
-    "Tuple": _load_types_tuple_1,
-    "Map": _load_types_map_1,
-    "IMap": _load_types_imap_1,
-    "Constant": _load_types_constant,
-}
-
-
-_load_types_sec: dict[
-    str,
-    typing.Callable[
-        [
-            list[str],
-            namedset.NamedSet[SHVTypeBase],
-            SHVTypeBase,
-            collections.abc.Mapping,
-        ],
-        None,
-    ],
-] = {
-    "List": _load_types_list_2,
-    "Tuple": _load_types_tuple_2,
-    "Map": _load_types_map_2,
-    "IMap": _load_types_imap_2,
-}
-
-
-def _load_types_invalid(
-    location: list[str], name: str, attrs: collections.abc.MutableMapping
-) -> None:
-    raise SHVTreeValueError(location, f"Invalid 'type' of the {name} type.")
-
-
-def _load_types_alias(
-    location: list[str], res: namedset.NamedSet[SHVTypeBase], obj: SHVTypeAlias, tp: str
-) -> None:
-    obj.type = _get_type(location, res, tp)
-
-
-def _load_types_oneof(
-    location: list[str],
-    res: namedset.NamedSet[SHVTypeBase],
-    obj: SHVTypeOneOf,
-    types: collections.abc.Sequence,
-) -> None:
-    obj.update(_get_type(location, res, dtype) for dtype in types)
-
-
-def load_types(
-    data: collections.abc.Mapping[str, typing.Any]
-) -> namedset.NamedSet[SHVTypeBase]:
-    """Load set of types from generic representation."""
-    location = ["types"]
-    if not isinstance(data, collections.abc.Mapping):
-        raise SHVTreeValueError(location, "Invalid format")
-    res: namedset.NamedSet[SHVTypeBase] = namedset.NamedSet()
-    # To solve any inter-type dependency we do two passes
-    for key, value in data.items():
-        if key in shvBuiltins:
-            raise SHVTreeValueError(
-                location + [key], "Redefining builtin types is not allowed"
-            )
-        if isinstance(value, str):
-            res.add(SHVTypeAlias(key))
-        elif isinstance(value, collections.abc.Sequence):
-            res.add(SHVTypeOneOf(key))
-        elif isinstance(value, collections.abc.Mapping):
-            attrs = {**value}
-            if "type" not in attrs:
-                raise SHVTreeValueError(location + [key], "Missing 'type'")
-            tp = _load_types.get(attrs.pop("type"), _load_types_invalid)(
-                location + [key], key, attrs
-            )
-            if attrs:
-                raise SHVTreeValueError(
-                    location + [key], f"Invalid keys: {attrs.keys()}"
-                )
-            assert tp is not None
-            res.add(tp)
-        else:
-            raise SHVTreeValueError(
-                location + [key], f"Invalid type description format: {value}"
-            )
-    for key, value in data.items():
-        obj = res[key]
-        if isinstance(value, str):
-            assert isinstance(obj, SHVTypeAlias)
-            _load_types_alias(location + [key], res, obj, value)
-        elif isinstance(value, collections.abc.Sequence):
-            assert isinstance(obj, SHVTypeOneOf)
-            _load_types_oneof(location + [key], res, obj, value)
-        elif isinstance(value, collections.abc.Mapping):
-            _load_types_sec.get(value["type"], lambda *_: None)(
-                location + [key], res, obj, value
-            )
-    return res
-
-
 def load_nodes(
-    data: collections.abc.Mapping[str, typing.Any],
+    data: typing.Any,
     types: namedset.NamedSet[SHVTypeBase],
 ) -> namedset.NamedSet[SHVNode]:
     """Load nodes set from generic representation."""

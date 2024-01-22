@@ -1,8 +1,6 @@
 {
   description = "Python SHV Tree";
-  inputs = {
-    pyshv.url = "git+https://gitlab.com/elektroline-predator/pyshv.git";
-  };
+  inputs.pyshv.url = "github:silicon-heaven/pyshv";
 
   outputs = {
     self,
@@ -41,6 +39,7 @@
         buildPythonPackage,
         pytestCheckHook,
         pythonPackages,
+        setuptools,
         sphinxHook,
       }:
         buildPythonPackage {
@@ -50,8 +49,8 @@
           inherit src;
           outputs = ["out" "doc"];
           propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = requires-docs pythonPackages ++ [sphinxHook];
-          nativeCheckInputs = requires-test pythonPackages ++ [pytestCheckHook];
+          nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
+          nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
         };
 
       pypkg-asyncinotify = {

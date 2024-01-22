@@ -5,7 +5,7 @@ import sys
 
 import ruamel.yaml
 
-from .. import SHVTree, load, load_yaml
+from .. import load, load_yaml
 from .check import Checks, check
 
 logger = logging.getLogger(__name__)

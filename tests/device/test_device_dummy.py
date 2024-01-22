@@ -86,7 +86,6 @@ async def test_prop_imap(device, client):
     (
         ("serialNumber", 0xFF42),
         ("status", 0),
-        ("errors", 0),
     ),
 )
 async def test_common_props_get(device, client, path, expected):

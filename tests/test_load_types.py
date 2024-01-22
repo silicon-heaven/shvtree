@@ -41,13 +41,12 @@ _myIMap[0] = shvString
 _myIMap[1] = shvDateTime
 _myIMap[7] = shvBlob
 
-_someEnum = SHVTypeEnum("someenum", "name", "surname")
+_sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")
 
 
 @pytest.mark.parametrize(
     "repre,expected",
     (
-        ({"foo": "Null"}, NamedSet(SHVTypeAlias("foo", shvNull))),
         (
             {"foo": {"type": "Int", "minimum": 8, "maximum": 12}},
             NamedSet(SHVTypeInt("foo", 8, 12)),
@@ -107,6 +106,7 @@ _someEnum = SHVTypeEnum("someenum", "name", "surname")
             {"foo": {"type": "Blob", "maxLength": 64}},
             NamedSet(SHVTypeString("foo", max_length=64)),
         ),
+        ({"foo": "Null"}, NamedSet(SHVTypeAlias("foo", shvNull))),
         (
             {"one": "List", "two": "Bool"},
             NamedSet(SHVTypeAlias("two", shvBool), SHVTypeAlias("one", shvList)),
@@ -119,10 +119,23 @@ _someEnum = SHVTypeEnum("someenum", "name", "surname")
             {
                 "foo": {
                     "type": "Enum",
-                    "values": ["one", "two", {"four": 4, "six": 6}, "seven"],
+                    "values": [
+                        "one",
+                        "two",
+                        {"four": 4, "six": 6},
+                        "seven",
+                        None,
+                        "nine",
+                        7,
+                        "sixteen",
+                    ],
                 }
             },
-            NamedSet(SHVTypeEnum("foo", "one", "two", four=4, six=6, seven=7)),
+            NamedSet(
+                SHVTypeEnum(
+                    "foo", "one", "two", four=4, six=6, seven=7, nine=9, sixteen=16
+                )
+            ),
         ),
         (
             {
@@ -136,7 +149,7 @@ _someEnum = SHVTypeEnum("someenum", "name", "surname")
         ),
         (
             {
-                "footuple": {"type": "Tuple", "fields": ["Decimal", "UInt"]},
+                "footuple": {"type": "Tuple", "items": ["Decimal", "UInt"]},
             },
             NamedSet(
                 SHVTypeTuple("footuple", shvDecimal, shvUInt),
@@ -144,19 +157,32 @@ _someEnum = SHVTypeEnum("someenum", "name", "surname")
         ),
         (
             {
-                "someenum": {
+                "sometupleEnum": {
                     "type": "Enum",
                     "values": ["name", "surname"],
                 },
                 "sometuple": {
                     "type": "Tuple",
-                    "fields": ["String", "String"],
-                    "enum": "someenum",
+                    "items": ["String", "String"],
+                    "enum": "sometupleEnum",
                 },
             },
             NamedSet(
-                _someEnum,
-                SHVTypeTuple("sometuple", shvString, shvString, enum=_someEnum),
+                _sometupleEnum,
+                SHVTypeTuple("sometuple", shvString, shvString, enum=_sometupleEnum),
+            ),
+        ),
+        (
+            {
+                "sometuple": {
+                    "type": "Tuple",
+                    "items": ["String", "String"],
+                    "enum": ["name", "surname"],
+                },
+            },
+            NamedSet(
+                _sometupleEnum,
+                SHVTypeTuple("sometuple", shvString, shvString, enum=_sometupleEnum),
             ),
         ),
         (
@@ -186,12 +212,8 @@ _someEnum = SHVTypeEnum("someenum", "name", "surname")
             {
                 "myimap": {
                     "type": "IMap",
-                    "enum": "myimapEnum",
+                    "enum": ["one", "two", {"seven": 7}],
                     "fields": {"one": "String", "two": "DateTime", "seven": "Blob"},
-                },
-                "myimapEnum": {
-                    "type": "Enum",
-                    "values": ["one", "two", {"seven": 7}],
                 },
             },
             NamedSet(_myIMap, _myIMapEnum),
@@ -230,7 +252,7 @@ def test_load_type_invalid_missing():
 
 def test_load_type_invalid_enum():
     with pytest.raises(SHVTreeValueError):
-        load_types({"foo": {"type": "Enum", "values": [None]}})
+        load_types({"foo": {"type": "Enum", "values": [0.0]}})
 
 
 def test_load_type_invalid_tuple_enum():

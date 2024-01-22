@@ -5,9 +5,11 @@ from .namedset import Named, NamedSet
 from .node import SHVNode, SHVPropError
 from .shvtree import SHVTree
 from .types import (
+    SHVBitfieldCompatible,
     SHVTypeAlias,
     SHVTypeBase,
     SHVTypeBitfield,
+    SHVTypeBitfieldCompatible,
     SHVTypeBlob,
     SHVTypeConstant,
     SHVTypeDateTime,
@@ -70,6 +72,8 @@ __all__ = [
     "SHVTypeOneOf",
     "SHVTypeEnum",
     "SHVTypeBitfield",
+    "SHVTypeBitfieldCompatible",
+    "SHVBitfieldCompatible",
     "SHVTypeList",
     "SHVTypeTuple",
     "SHVTypeMap",

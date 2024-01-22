@@ -28,6 +28,7 @@ _tree1_types_args_since = SHVTypeOneOf(
     "getLogArgsSince", shvDateTime, shvNull, _tree1_types_args_since_const_last
 )
 _tree1_types_args_until = SHVTypeOneOf("getLogArgsUntil", shvDateTime, shvNull)
+_tree1_types_errorsEnum = SHVTypeEnum("errorsEnum", "outOfRange", "lowPower")
 _tree1_types_propEnum = SHVTypeEnum(
     "propEnum", "boolean", "integer", "uinteger", "string", "dateTime"
 )
@@ -44,7 +45,8 @@ tree1_types: NamedSet[SHVTypeBase] = NamedSet(
         recordCountLimit=shvInt,
     ),
     SHVTypeEnum("status", "ok", "warning", "error"),
-    SHVTypeBitfield("errors", "outOfRange", "lowPower"),
+    _tree1_types_errorsEnum,
+    SHVTypeBitfield("errors", shvBool, shvBool, enum=_tree1_types_errorsEnum),
     SHVTypeMap(
         "timeZone", offset=shvInt, dtoffset=shvInt, dtstart=shvInt, dtend=shvInt
     ),
@@ -111,7 +113,7 @@ shvtree1_nodes: NamedSet[SHVNode] = NamedSet(
         "status", tree1_types["status"], readonly=True, signal="fchng"
     ),
     SHVNode.new_property("errors", tree1_types["errors"]),
-    SHVNode.new_property("utcTime", shvDateTime),
+    SHVNode.new_property("utcTime", shvDateTime, signal=False),
     SHVNode.new_property("localTime", shvDateTime, readonly=True),
     SHVNode.new_property("timeZone", tree1_types["timeZone"]),
     SHVNode.new_property("version", tree1_types["version"], readonly=True),

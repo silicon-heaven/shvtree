@@ -2,6 +2,7 @@
 # pylint: disable=C0103
 import datetime
 import importlib.metadata
+import logging
 import random
 import typing
 
@@ -11,6 +12,7 @@ from .. import (
     SHVMethod,
     SHVTypeAlias,
     SHVTypeBase,
+    SHVTypeBitfield,
     SHVTypeConstant,
     SHVTypeDateTime,
     SHVTypeEnum,
@@ -30,6 +32,8 @@ from .. import (
     shvUInt,
 )
 from .device import SHVTreeDevice
+
+logger = logging.getLogger(__name__)
 
 
 class SHVTreeDummyDevice(SHVTreeDevice):
@@ -76,10 +80,19 @@ class SHVTreeDummyDevice(SHVTreeDevice):
         if shvtp is shvDecimal:
             return random.randint(0, 100000)
         if isinstance(shvtp, SHVTypeEnum):
-            # Note: this handles SHVTypeBitfield as well
             return random.choice(list(shvtp.values()))
+        if isinstance(shvtp, SHVTypeBitfield):
+            val = 0
+            for tp, pos, siz in shvtp.types():
+                val |= int(cls._dummy_value(tp) & (2**siz - 1)) << pos
+            return val
         if isinstance(shvtp, SHVTypeList):
-            return []
+            if shvtp.maxlen is None:
+                return []
+            return [
+                cls._dummy_value(random.choice(list(shvtp)))
+                for _ in range(random.randrange(shvtp.minlen, shvtp.maxlen))
+            ]
         if isinstance(shvtp, SHVTypeTuple):
             return [cls._dummy_value(v) for v in shvtp]
         if isinstance(shvtp, SHVTypeMap):
@@ -105,12 +118,6 @@ class SHVTreeDummyDevice(SHVTreeDevice):
     def _status_get(self, method: SHVMethod) -> shv.SHVType:
         if isinstance(method.result, SHVTypeEnum) and "ok" in method.result:
             return method.result["ok"]
-        return self._dummy_value(method.result)
-
-    def _errors_get(self, method: SHVMethod) -> shv.SHVType:
-        value = 0
-        if method.result.validate(value):
-            return value
         return self._dummy_value(method.result)
 
     def _utcTime_get(self, method: SHVMethod) -> shv.SHVType:
