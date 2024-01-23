@@ -90,7 +90,7 @@ class SHVTreeDummyDevice(SHVTreeDevice):
             if shvtp.maxlen is None:
                 return []
             return [
-                cls._dummy_value(random.choice(list(shvtp)))
+                cls._dummy_value(shvtp)
                 for _ in range(random.randrange(shvtp.minlen, shvtp.maxlen))
             ]
         if isinstance(shvtp, SHVTypeTuple):
@@ -104,7 +104,7 @@ class SHVTreeDummyDevice(SHVTreeDevice):
         if isinstance(shvtp, SHVTypeAlias):
             return cls._dummy_value(shvtp.type)
         if isinstance(shvtp, SHVTypeOneOf):
-            return cls._dummy_value(next(iter(shvtp))) if shvtp else None
+            return cls._dummy_value(random.choice(list(shvtp))) if shvtp else None
         if isinstance(shvtp, SHVTypeConstant):
             return shvtp.value
         raise shv.RpcMethodCallExceptionError(f"Can't generate value for type: {shvtp}")

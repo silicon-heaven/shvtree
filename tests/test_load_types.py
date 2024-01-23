@@ -44,6 +44,9 @@ _myIMap[7] = shvBlob
 
 _sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")
 
+_simpleListOneOf = SHVTypeOneOf("simplelistOneOf", _nullAlias, shvString)
+_someListOneOf = SHVTypeOneOf("somelistOneOf", shvInt, shvString)
+
 
 @pytest.mark.parametrize(
     "repre,expected",
@@ -141,27 +144,30 @@ _sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")
         (
             {
                 "nullAlias": "Null",
-                "somelist": {
+                "simplelist": {
                     "type": "List",
                     "allowed": ["nullAlias", "String"],
                 },
             },
             NamedSet(
+                SHVTypeList("simplelist", _simpleListOneOf),
+                _simpleListOneOf,
                 _nullAlias,
-                SHVTypeList("somelist", _nullAlias, shvString),
             ),
         ),
         (
             {
+                "somelistOneOf": ["Int", "String"],
                 "somelist": {
                     "type": "List",
-                    "allowed": ["Int", "String"],
+                    "allowed": "somelistOneOf",
                     "minlen": 1,
                     "maxlen": 8,
                 },
             },
             NamedSet(
-                SHVTypeList("somelist", shvInt, shvString, minlen=1, maxlen=8),
+                _someListOneOf,
+                SHVTypeList("somelist", _someListOneOf, minlen=1, maxlen=8),
             ),
         ),
         (

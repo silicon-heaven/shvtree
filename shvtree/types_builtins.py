@@ -8,7 +8,7 @@ from .types import (
     SHVTypeDecimal,
     SHVTypeDouble,
     SHVTypeInt,
-    SHVTypeListAny,
+    SHVTypeList,
     SHVTypeOneOf,
     SHVTypeString,
     shvAny,
@@ -31,7 +31,7 @@ shvDecimal = SHVTypeDecimal("Decimal")
 shvString = SHVTypeString("String")
 shvBlob = SHVTypeBlob("Blob")
 shvDateTime = SHVTypeDateTime()
-shvList = SHVTypeListAny()
+shvList = SHVTypeList("List")
 
 shvGetParam = SHVTypeOneOf("_getParam", shvNull, shvString)
 

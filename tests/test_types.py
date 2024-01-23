@@ -52,7 +52,7 @@ from shvtree import (
         (shvBlob, types.SHVTypeBlob("Blob")),
         (shvString, types.SHVTypeString("String")),
         (shvDateTime, types.SHVTypeDateTime()),
-        (shvList, types.SHVTypeListAny()),
+        (shvList, types.SHVTypeList("List")),
     ],
 )
 def test_signletons(obj1, obj2):
@@ -349,54 +349,17 @@ def test_bitfield_value(value, res):
 
 def test_list():
     """Check that we have correct implementation for list."""
-    lst = SHVTypeList("listfoo", shvNull, shvInt, shvUInt)
+    lst = SHVTypeList("listfoo", shvUInt)
     assert lst.name == "listfoo"
-    assert shvNull in lst
-    assert shvInt in lst
-    assert shvUInt in lst
-    assert shvAny not in lst
-    assert shvDouble not in lst
-    assert len(lst) == 3
-    assert shvNull in lst
-    assert shvInt in lst
-    assert shvUInt in lst
+    assert lst.allowed is shvUInt
 
 
 def test_list_modify():
     """Check that we can modify list."""
-    lst = SHVTypeList("foo")
-    assert shvString not in lst
-    lst.add(shvString)
-    assert shvString in lst
-    lst.discard(shvString)
-    assert shvString not in lst
-
-
-def test_shv_list():
-    """Check the content of the shvList."""
-    assert shvAny in shvList
-    assert set(iter(shvList)) == {
-        shvAny,
-    }
-
-
-def test_shv_any_list_add():
-    """Check that we can't initialize new shvList."""
-    lst = SHVTypeList("anylist")
-    with pytest.raises(ValueError):
-        lst.add(shvAny)
-
-
-def test_shv_list_modify_add():
-    """Check that we can't modify shvList."""
-    with pytest.raises(RuntimeError):
-        shvList.add(shvNull)
-
-
-def test_shv_list_modify_discard():
-    """Check that we can't modify shvList."""
-    with pytest.raises(RuntimeError):
-        shvList.discard(shvAny)
+    lst = SHVTypeList("foo", shvInt)
+    assert lst.allowed is shvInt
+    lst.allowed = shvString
+    assert lst.allowed is shvString
 
 
 # TODO check SHVTypeTuple

@@ -107,24 +107,32 @@ class _TypesLoader:
             self.load(self.to_load.pop())
         return self.types
 
-    def get_type(self, location: list[str], name: str | None) -> SHVTypeBase:
+    def get_type(
+        self, location: list[str], name: str, value: typing.Any
+    ) -> SHVTypeBase:
         # Some formats such as YAML allow None to be loaded when Null or
         # other like that strings are used. We support this and consider it
         # to be shvNull type. Otherwise we would have to use `"Null"` instead of
         # just plain `Null`.
-        if name is None:
+        if value is None:
             return shvNull
-        if name in shvBuiltins:
-            return shvBuiltins[name]
-        if name in self.types:
-            return self.types[name]
-        if name in self.to_load:
-            self.load(name)
-            return self.types[name]
+        if isinstance(value, str):
+            if value in shvBuiltins:
+                return shvBuiltins[value]
+            if value in self.types:
+                return self.types[value]
+            if value in self.to_load:
+                self.load(value)
+                return self.types[value]
+        elif isinstance(value, collections.abc.Sequence):
+            oneof = SHVTypeOneOf(f"{name}OneOf")
+            self.types.add(oneof)
+            oneof.update(self.get_type(location, oneof.name, v) for v in value)
+            return oneof
         # Note: This can also be due to the implementation error. Type loaders
         # shnould always add them self to ``self.types`` before they call this
         # method to prevent from this confusing error showing up.
-        raise SHVTreeValueError(location, f"Invalid type '{name}' referenced.")
+        raise SHVTreeValueError(location, f"Invalid type '{value}' referenced.")
 
     def load(self, name: str) -> None:
         location = ["types", name]
@@ -135,11 +143,11 @@ class _TypesLoader:
         if isinstance(value, str):
             alias = SHVTypeAlias(name)
             self.types.add(alias)
-            alias.type = self.get_type(location, value)
+            alias.type = self.get_type(location, alias.name, value)
         elif isinstance(value, collections.abc.Sequence):
             oneof = SHVTypeOneOf(name)
             self.types.add(oneof)
-            oneof.update(self.get_type(location, n) for n in value)
+            oneof.update(self.get_type(location, name, v) for v in value)
         elif isinstance(value, collections.abc.Mapping):
             attrs = {**value}
             if "type" not in attrs:
@@ -258,7 +266,7 @@ class _TypesLoader:
         self, location: list[str], name: str, enum: typing.Any
     ) -> SHVTypeEnum:
         if isinstance(enum, str):
-            tp = self.get_type(location, enum)
+            tp = self.get_type(location, name, enum)
             if not isinstance(tp, SHVTypeEnum):
                 raise SHVTreeValueError(location, f"Type '{enum}' is not Enum")
             return tp
@@ -303,7 +311,7 @@ class _TypesLoader:
         rtypes = attrs.pop("types", None)
         if rtypes is not None:
             for tp, i in self._load_enumlike(location + ["types"], rtypes):
-                rtp = self.get_type(location + ["types"], tp)
+                rtp = self.get_type(location + ["types"], name, tp)
                 if SHVTypeBitfield.type_span(rtp) is None:
                     raise SHVTreeValueError(
                         location + ["types"], f"Type {tp} can't be included in bitfield"
@@ -326,22 +334,18 @@ class _TypesLoader:
         res = SHVTypeList(name, minlen=minlen, maxlen=maxlen)
         self.types.add(res)
 
-        allowed = attrs.pop("allowed", None)  # Loaded in second pass
-        if isinstance(allowed, str):
-            allowed = [allowed]
-        if not isinstance(allowed, collections.abc.Sequence):
-            raise SHVTreeValueError(location + ["allowed"], "Expected list of types")
-        for t in allowed:
-            if not isinstance(t, str):
-                raise SHVTreeValueError(location + ["allowed"], "Expected string")
-            res.add(self.get_type(location + ["allowed"], t))
+        res.allowed = self.get_type(
+            location + ["allowed"], name, attrs.pop("allowed", None)
+        )
 
     def _load_tuple(self, location: list[str], name: str, attrs: dict) -> None:
         res = SHVTypeTuple(name)
         self.types.add(res)
-        # TODO check fields
-        for tp in attrs.pop("items", []):
-            res.append(self.get_type(location + ["items"], tp))
+        items = attrs.pop("items", [])
+        if not isinstance(items, collections.abc.Sequence):
+            raise SHVTreeValueError(location + ["items"], "Invalid format")
+        for i, tp in enumerate(items):
+            res.append(self.get_type(location + [f"items[{i}]"], f"{name}{i}", tp))
         if (enum := attrs.pop("enum", None)) is not None:
             res.enum = self._load_subenum(location + ["enum"], name, enum)
 
@@ -356,7 +360,7 @@ class _TypesLoader:
                 raise SHVTreeValueError(
                     location + ["fields", str(key)], "Expected string"
                 )
-            res[key] = self.get_type(location + ["fields"], value)
+            res[key] = self.get_type(location + ["fields"], name, value)
 
     def _load_imap(self, location: list[str], name: str, attrs: dict) -> None:
         res = SHVTypeIMap(name)
@@ -367,17 +371,25 @@ class _TypesLoader:
         if isinstance(fields, collections.abc.Mapping):
             for dkey, dvalue in fields.items():
                 if not isinstance(dkey, str):
-                    raise SHVTreeValueError(location + ["fields"], "Key must be string")
-                res[dkey] = self.get_type(location + ["fields"], dvalue)
+                    raise SHVTreeValueError(
+                        location + ["fields"], f"Key must be string: {dkey!r}"
+                    )
+                res[dkey] = self.get_type(
+                    location + ["fields"], f"{name}{dkey}", dvalue
+                )
         elif isinstance(fields, collections.abc.Sequence):
             nexti = 0
-            for dkey in fields:
+            for i, dkey in enumerate(fields):
                 if isinstance(dkey, str):
-                    res[nexti] = self.get_type(location + ["fields"], dkey)
+                    res[nexti] = self.get_type(
+                        location + ["fields"], f"{name}{nexti}", dkey
+                    )
                     nexti += 1
                 elif isinstance(dkey, collections.abc.Mapping):
                     for key, value in dkey.items():
-                        res[value] = self.get_type(location + ["fields", key], key)
+                        res[value] = self.get_type(
+                            location + [f"fields[{i}]", key], f"{name}{value}", key
+                        )
                         nexti = value + 1
                 else:
                     raise SHVTreeValueError(

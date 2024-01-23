@@ -82,6 +82,80 @@ class SHVTypeAny(SHVTypeBase):
 shvAny = SHVTypeAny()  # Must be defined here for reuse not in types_builtins.py
 
 
+class SHVTypeAlias(SHVTypeBase):
+    """Type that provide a way to name type with multiple names."""
+
+    def __init__(self, name: str, shvtp: SHVTypeBase = shvAny):
+        """Initialize new combination of types and name it as such."""
+        super().__init__(name)
+        self.type = shvtp
+
+    def __eq__(self, other: object) -> bool:
+        return self.type == other or (
+            isinstance(other, SHVTypeAlias) and self.type == other.type
+        )
+
+    def validate(self, value: object) -> bool:
+        return self.type.validate(value)
+
+    def chainpack_bytes(self) -> int | None:
+        return self.type.chainpack_bytes()
+
+
+class SHVTypeOneOf(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
+    """Type that allows one of the selected types to be returned."""
+
+    def __init__(self, name: str, *types: SHVTypeBase):
+        """Initialize new combination of types and name it as such.
+
+        :param name: Name of the new type.
+        :param types: Allowed types to be used when this type is used.
+        """
+        super().__init__(name)
+        self._types: list[SHVTypeBase] = []
+        self.update(types)
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, SHVTypeOneOf) and self._types == other._types
+
+    def __contains__(self, value: object) -> bool:
+        return value in self._types
+
+    def __iter__(self) -> typing.Iterator[SHVTypeBase]:
+        return iter(self._types)
+
+    def __len__(self) -> int:
+        return len(self._types)
+
+    def add(self, value: object) -> None:
+        if not isinstance(value, SHVTypeBase):
+            raise TypeError("Only instances of SHVTypeBase can be included")
+        self._types.append(value)
+
+    def discard(self, value: object) -> None:
+        if not isinstance(value, SHVTypeBase):
+            raise TypeError("Only instances of SHVTypeBase can be included")
+        self._types.remove(value)
+
+    def update(self, values: typing.Iterable[SHVTypeBase]) -> None:
+        for value in values:
+            self.add(value)
+
+    def validate(self, value: object) -> bool:
+        return any(tp.validate(value) for tp in self)
+
+    def chainpack_bytes(self) -> int | None:
+        res = -1
+        for tp in self._types:
+            size = tp.chainpack_bytes()
+            if size is None:
+                return None
+            res = max(res, size)
+        if res < 0:
+            return None
+        return res
+
+
 class SHVTypeNull(SHVTypeBase):
     """SHV Null type.
 
@@ -791,72 +865,72 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
         return res
 
 
-class SHVTypeList(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
+class SHVTypeList(SHVTypeBase):
     """The native SHV type that contains ordered values."""
 
+    __anylist: SHVTypeList | None = None
+
+    def __new__(
+        cls,
+        name: str,
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> SHVTypeList:
+        if name == "List":
+            if cls.__anylist is None:
+                cls.__anylist = object.__new__(cls)
+            return cls.__anylist
+        return object.__new__(cls)
+
     def __init__(
-        self, name: str, *types: SHVTypeBase, minlen: int = 0, maxlen: int | None = None
+        self,
+        name: str,
+        allowed: SHVTypeBase = shvAny,
+        minlen: int = 0,
+        maxlen: int | None = None,
     ):
         """Initialize new List type.
 
         :param name: Name of the new type.
-        :param types: Allowed types in the list.
+        :param allowed: Allowed type in the list.
         """
         super().__init__(name)
         self._types: list[SHVTypeBase] = []
-        self.update(types)
+        self._allowed: SHVTypeBase
+        self.allowed = allowed
         self.minlen: int = minlen
         self.maxlen: int | None = maxlen
 
-    def __contains__(self, value: object) -> bool:
-        return value in self._types
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, SHVTypeList)
+            and other.allowed == self.allowed
+            and other.minlen == self.minlen
+            and other.maxlen == self.maxlen
+        )
 
-    def __iter__(self) -> typing.Iterator[SHVTypeBase]:
-        return iter(self._types)
+    @property
+    def allowed(self) -> SHVTypeBase:
+        """The type that is allowed to be in the list.
 
-    def __len__(self) -> int:
-        return len(self._types)
+        You can use :class:`SHVTypeOneOf` if you want to allow multiple types.
+        """
+        return self._allowed
 
-    def add(self, value: SHVTypeBase) -> None:
-        if value is shvAny:
-            raise ValueError("To specify list with shvAny please use shvList")
-        self._types.append(value)
-
-    def discard(self, value: SHVTypeBase) -> None:
-        self._types.remove(value)
-
-    def update(self, values: typing.Iterable[SHVTypeBase]) -> None:
-        for value in values:
-            self.add(value)
+    @allowed.setter
+    def allowed(self, value: SHVTypeBase) -> None:
+        """Set and validate the allowed type."""
+        if self.name == "List" and value is not shvAny:
+            raise ValueError("List type can't be modified")
+        self._allowed = value
 
     def validate(self, value: object) -> bool:
         return (
             isinstance(value, collections.abc.Sequence)
-            and all(any(tp.validate(item) for tp in self._types) for item in value)
             and self.minlen <= len(value)
             and (self.maxlen is None or len(value) <= self.maxlen)
+            and all(self.allowed.validate(item) for item in value)
         )
-
-
-class SHVTypeListAny(SHVTypeList):
-    """The native SHV type that can contain any other types."""
-
-    __obj = None
-
-    def __new__(cls) -> "SHVTypeListAny":
-        if cls.__obj is None:
-            cls.__obj = object.__new__(cls)
-        return cls.__obj
-
-    def __init__(self) -> None:
-        super().__init__("List")
-        self._types.append(shvAny)
-
-    def add(self, value: object) -> None:
-        raise RuntimeError("Modification disabled for shvList")
-
-    def discard(self, value: object) -> None:
-        raise RuntimeError("Modification disabled for shvList")
 
 
 class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
@@ -987,77 +1061,6 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
     def chainpack_bytes(self) -> int | None:
         # TODO
         return None
-
-
-class SHVTypeAlias(SHVTypeBase):
-    """Type that provide a way to name type with multiple names."""
-
-    def __init__(self, name: str, shvtp: SHVTypeBase = shvNull):
-        """Initialize new combination of types and name it as such."""
-        super().__init__(name)
-        self.type = shvtp
-
-    def __eq__(self, other: object) -> bool:
-        return self.type == other or (
-            isinstance(other, SHVTypeAlias) and self.type == other.type
-        )
-
-    def validate(self, value: object) -> bool:
-        return self.type.validate(value)
-
-    def chainpack_bytes(self) -> int | None:
-        return self.type.chainpack_bytes()
-
-
-class SHVTypeOneOf(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
-    """Type that allows one of the selected types to be returned."""
-
-    def __init__(self, name: str, *types: SHVTypeBase):
-        """Initialize new combination of types and name it as such.
-
-        :param name: Name of the new type.
-        :param types: Allowed types to be used when this type is used.
-        """
-        super().__init__(name)
-        self._types: list[SHVTypeBase] = []
-        self.update(types)
-
-    def __contains__(self, value: object) -> bool:
-        return value in self._types
-
-    def __iter__(self) -> typing.Iterator[SHVTypeBase]:
-        return iter(self._types)
-
-    def __len__(self) -> int:
-        return len(self._types)
-
-    def add(self, value: object) -> None:
-        if not isinstance(value, SHVTypeBase):
-            raise TypeError("Only instances of SHVTypeBase can be included")
-        self._types.append(value)
-
-    def discard(self, value: object) -> None:
-        if not isinstance(value, SHVTypeBase):
-            raise TypeError("Only instances of SHVTypeBase can be included")
-        self._types.remove(value)
-
-    def update(self, values: typing.Iterable[SHVTypeBase]) -> None:
-        for value in values:
-            self.add(value)
-
-    def validate(self, value: object) -> bool:
-        return any(tp.validate(value) for tp in self)
-
-    def chainpack_bytes(self) -> int | None:
-        res = -1
-        for tp in self._types:
-            size = tp.chainpack_bytes()
-            if size is None:
-                return None
-            res = max(res, size)
-        if res < 0:
-            return None
-        return res
 
 
 class SHVTypeConstant(SHVTypeBase):
