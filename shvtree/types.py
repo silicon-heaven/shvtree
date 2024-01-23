@@ -759,7 +759,7 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
             bit = self.enum[bit]
         valsiz = self.type_span(value)
         if valsiz is None:
-            raise ValueError("Type can't be included in bitfield.")
+            raise ValueError(f"Type {valsiz!r} can't be included in bitfield.")
         old = list(self)
         self.clear()
         offset = 0

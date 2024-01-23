@@ -292,7 +292,7 @@ class _TypesLoader:
             if val is None:
                 nexti += 1
             elif isinstance(val, int):
-                nexti += val - 1
+                nexti += val
             elif isinstance(val, str):
                 yield val, nexti
                 nexti += 1
@@ -316,7 +316,7 @@ class _TypesLoader:
                     raise SHVTreeValueError(
                         location + ["types"], f"Type {tp} can't be included in bitfield"
                     )
-                res.set(i, typing.cast(SHVTypeBitfieldCompatible, tp))
+                res.set(i, typing.cast(SHVTypeBitfieldCompatible, rtp))
         if (renum := attrs.pop("enum", None)) is not None:
             enum = self._load_subenum(location + ["enum"], name, renum)
             if rtypes is None:

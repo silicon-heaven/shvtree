@@ -6,6 +6,7 @@ import ruamel.yaml
 
 from shvtree import (
     SHVTypeAlias,
+    SHVTypeBitfield,
     SHVTypeDecimal,
     SHVTypeDouble,
     SHVTypeEnum,
@@ -26,6 +27,7 @@ from shvtree import (
     shvNull,
     shvString,
     shvUInt,
+    shvUInt8,
 )
 from shvtree.load import SHVTreeValueError, load_types
 from shvtree.namedset import NamedSet
@@ -46,6 +48,8 @@ _sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")
 
 _simpleListOneOf = SHVTypeOneOf("simplelistOneOf", _nullAlias, shvString)
 _someListOneOf = SHVTypeOneOf("somelistOneOf", shvInt, shvString)
+
+_somebitEnum = SHVTypeEnum("somebitEnum", "one", "two", five=4, last=63)
 
 
 @pytest.mark.parametrize(
@@ -130,7 +134,7 @@ _someListOneOf = SHVTypeOneOf("somelistOneOf", shvInt, shvString)
                         "seven",
                         None,
                         "nine",
-                        7,
+                        6,
                         "sixteen",
                     ],
                 }
@@ -206,6 +210,28 @@ _someListOneOf = SHVTypeOneOf("somelistOneOf", shvInt, shvString)
             NamedSet(
                 _sometupleEnum,
                 SHVTypeTuple("sometuple", shvString, shvString, enum=_sometupleEnum),
+            ),
+        ),
+        (
+            {
+                "somebit": {
+                    "type": "Bitfield",
+                    "enum": ["one", "two", 2, "five", {"last": 63}],
+                },
+            },
+            NamedSet(_somebitEnum, SHVTypeBitfield.from_enum("somebit", _somebitEnum)),
+        ),
+        (
+            {
+                "unknownbit": {
+                    "type": "Bitfield",
+                    "types": ["Bool", 2, "UInt8", {"Bool": 12}],
+                },
+            },
+            NamedSet(
+                SHVTypeBitfield(
+                    "unknownbit", shvBool, shvNull, shvNull, shvUInt8, shvNull, shvBool
+                )
             ),
         ),
         (
