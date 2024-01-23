@@ -1,5 +1,6 @@
 """The implementation of common device based on provided SHV Tree."""
 import asyncio
+import collections.abc
 import inspect
 import logging
 import re
@@ -7,7 +8,7 @@ import typing
 
 import shv
 
-from .. import SHVNode, SHVTree
+from .. import SHVMethod, SHVNode, SHVTree
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,16 @@ class SHVTreeDevice(shv.SimpleClient):
         if self.tree is not None and (node := self.tree.get_node(path)) is not None:
             for m in node.methods.values():
                 yield m.descriptor
+            if node.description:
+                yield shv.RpcMethodDesc(
+                    "desc",
+                    shv.RpcMethodFlags.GETTER | 0
+                    if len(node.description) <= 1024
+                    else shv.RpcMethodFlags.LARGE_RESULT_HINT,
+                    "Null",
+                    "String",
+                    shv.RpcMethodAccess.BROWSE,
+                )
 
     async def _method_call(
         self, path: str, method: str, access: shv.RpcMethodAccess, param: shv.SHVType
@@ -67,6 +78,12 @@ class SHVTreeDevice(shv.SimpleClient):
         }
         impl = self._get_method_impl(args)
         if impl is None:
+            if (
+                method == "desc"
+                and isinstance(node := args.get("node"), SHVNode)
+                and node.description
+            ):
+                return node.description.strip()
             return await super()._method_call(path, method, access, param)
         impl_param = inspect.signature(impl).parameters
         await self._pre_call(args)
@@ -132,34 +149,35 @@ class SHVTreeDevice(shv.SimpleClient):
         """
         if self.tree is None:
             return None
-        path = args["path"]
-        method_name = args["method_name"]
-        node = self.tree.get_node(path)
-        if node is None:
+        args["node"] = self.tree.get_node(args["path"])
+        if args["node"] is None:
             return None
-        method = node.methods.get(method_name, None)
-        if method is None or method.access > args["access"]:
+        args["method"] = args["node"].methods.get(args["method_name"], None)
+        if args["method"] is None or args["method"].access > args["access"]:
             return None
-        signals = self.Signals(self.client, path, node)
-        args.update({"node": node, "method": method, "signals": signals})
-        return getattr(self, self._method_name(path, method_name), None)
+        args["signals"] = self.Signals(self.client, args["path"], args["node"])
+        for impl_name in self._method_name(args["path"], args["method_name"]):
+            if (impl := getattr(self, impl_name, None)) is not None:
+                return impl  # type: ignore
+        return None
 
     _method_name_re = re.compile(r"\W|^(?=\d)")
 
     @classmethod
-    def _method_name(cls, path: str, method: str) -> str:
+    def _method_name(cls, path: str, method: str) -> collections.abc.Iterator[str]:
         """Map given generic method and path to the naming of it in this class.
 
         This method should not validate method or anything. It should only just
-        provide mapping from method path to some possible method name. If you
+        provide mapping from method path to some possible method names. If you
         want to have smarter selection of methods then please override rather
         `_get_method_imp` instead.
 
         :param path: Path to the node method is associated with.
         :param method: Method to be converted to the Python method name.
-        :return: Name of the method.
+        :return: Possible method names while first found is used.
         """
-        return cls._method_name_re.sub("_", f"_{path}_{method}")
+        yield cls._method_name_re.sub("_", f"_{path}_{method}")
+        yield cls._method_name_re.sub("_", f"__{method}")
 
     class Signals:
         """Provider of signal implementations.

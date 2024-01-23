@@ -960,7 +960,7 @@ class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
             hasattr(other, "enum") and other.enum == self.enum and super().__eq__(other)
         )
 
-    # TODO allow access trough enum names
+    # TODO allow access through enum names
 
     def validate(self, value: object) -> bool:
         return isinstance(value, collections.abc.Sequence) and all(

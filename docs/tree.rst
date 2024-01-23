@@ -57,7 +57,8 @@ signal
   name. That is allowed to support different signals over ``chng``.
 
 description
-  The brief description of the node.
+  The brief description of the node. This is automatically exposed with method
+  ``desc`` if specified.
 
 
 Methods

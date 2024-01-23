@@ -115,7 +115,19 @@ async def test_empty_ls_invalid(empty_device, client):
                 if path == ".app"
                 else []
             )
-            + list(m.descriptor for m in node.methods.values()),
+            + list(m.descriptor for m in node.methods.values())
+            + (
+                [
+                    RpcMethodDesc.getter(
+                        "desc",
+                        param="Null",
+                        result="String",
+                        access=shv.RpcMethodAccess.BROWSE,
+                    )
+                ]
+                if node.description
+                else []
+            ),
         )
         for path, node in iter(tree1)
     ),
@@ -137,6 +149,14 @@ async def test_empty_dir(empty_device, client):
         RpcMethodDesc.stdls(),
         RpcMethodDesc.stdlschng(),
     ]
+
+
+@pytest.mark.parametrize(
+    "path,method,expected",
+    (("test/serialNumber", "desc", "Serial number of the board"),),
+)
+async def test_call(device, client, path, method, expected):
+    assert await client.call(path, method) == expected
 
 
 @pytest.mark.parametrize(
