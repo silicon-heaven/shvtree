@@ -90,7 +90,7 @@ class SHVTreeDummyDevice(SHVTreeDevice):
             if shvtp.maxlen is None:
                 return []
             return [
-                cls._dummy_value(shvtp)
+                cls._dummy_value(shvtp.allowed)
                 for _ in range(random.randrange(shvtp.minlen, shvtp.maxlen))
             ]
         if isinstance(shvtp, SHVTypeTuple):
