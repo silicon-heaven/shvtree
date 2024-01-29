@@ -1,9 +1,11 @@
 """The implementation that creates dummy device out of any tree."""
 # pylint: disable=C0103
+import collections.abc
 import datetime
 import importlib.metadata
 import logging
 import random
+import string
 import typing
 
 import shv
@@ -13,20 +15,26 @@ from .. import (
     SHVTypeAlias,
     SHVTypeBase,
     SHVTypeBitfield,
+    SHVTypeBlob,
     SHVTypeConstant,
     SHVTypeDateTime,
+    SHVTypeDouble,
     SHVTypeEnum,
     SHVTypeIMap,
+    SHVTypeInt,
     SHVTypeList,
     SHVTypeMap,
     SHVTypeOneOf,
+    SHVTypeString,
     SHVTypeTuple,
     shvBlob,
     shvBool,
     shvDateTime,
     shvDecimal,
     shvDouble,
+    shvIMap,
     shvInt,
+    shvMap,
     shvNull,
     shvString,
     shvUInt,
@@ -61,24 +69,42 @@ class SHVTreeDummyDevice(SHVTreeDevice):
 
     @classmethod
     def _dummy_value(cls, shvtp: SHVTypeBase) -> shv.SHVType:
+        # TOOD support type nesting safely!!! to prevent infinite recursion
         if shvtp is shvNull:
             return None
         if shvtp is shvBool:
             return random.choice([True, False])
-        if shvtp is shvInt:
-            return random.randint(-100, 100)
-        if shvtp is shvUInt:
-            return random.randint(0, 100)
-        if shvtp is shvDouble:
-            return random.random()
-        if shvtp is shvBlob:
-            return b""
-        if shvtp is shvString:
-            return ""
         if shvtp is shvDateTime:
             return datetime.datetime.now()
         if shvtp is shvDecimal:
             return random.randint(0, 100000)
+        if shvtp in (shvMap, shvIMap):
+            return typing.cast(collections.abc.Mapping[str, shv.SHVType], {})
+        if isinstance(shvtp, SHVTypeInt):
+            # TODO cover case when min is higher than 100 and max lower than 0
+            minval = shvtp.minimum or (0 if shvtp.unsigned else -100)
+            maxval = shvtp.maximum or 100
+            if shvtp.multiple_of is not None:
+                return shvtp.multiple_of * random.randrange(
+                    minval // shvtp.multiple_of, maxval // shvtp.multiple_of
+                )
+            return random.randrange(minval, maxval)
+        if shvtp is shvDouble:
+            return random.random()
+        if isinstance(shvtp, SHVTypeString) and shvtp.pattern is None:
+            return "".join(
+                random.choice(string.ascii_letters)
+                for _ in range(
+                    random.randrange(shvtp.min_length or 0, shvtp.max_length or 100)
+                )
+            )
+        if isinstance(shvtp, SHVTypeBlob):
+            return bytes(
+                random.randrange(0, 255)
+                for _ in range(
+                    random.randrange(shvtp.min_length or 0, shvtp.max_length or 100)
+                )
+            )
         if isinstance(shvtp, SHVTypeEnum):
             return random.choice(list(shvtp.values()))
         if isinstance(shvtp, SHVTypeBitfield):

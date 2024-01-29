@@ -40,7 +40,7 @@ async def test_prop_uint(device, client):
 
 async def test_prop_string(device, client):
     res = await client.prop_get("test/properties/string")
-    assert res == ""
+    assert isinstance(res, str) and 0 <= len(res) <= 100
 
 
 async def test_prop_datetime(device, client):
@@ -55,7 +55,7 @@ async def test_prop_tuple(device, client):
     assert res[0] in (True, False)
     assert -100 <= res[1] <= 100
     assert 0 <= res[2] <= 100
-    assert res[3] == ""
+    assert isinstance(res[3], str) and 0 <= len(res[3]) <= 100
     assert isinstance(res[4], datetime.datetime)
 
 
@@ -66,7 +66,7 @@ async def test_prop_map(device, client):
     assert res["boolean"] in (True, False)
     assert -100 <= res["integer"] <= 100
     assert 0 <= res["uinteger"] <= 100
-    assert res["string"] == ""
+    assert isinstance(res["string"], str) and 0 <= len(res["string"]) <= 100
     assert isinstance(res["dateTime"], datetime.datetime)
 
 
@@ -77,7 +77,7 @@ async def test_prop_imap(device, client):
     assert res[0] in (True, False)
     assert -100 <= res[1] <= 100
     assert 0 <= res[2] <= 100
-    assert res[3] == ""
+    assert isinstance(res[3], str) and 0 <= len(res[3]) <= 100
     assert isinstance(res[4], datetime.datetime)
 
 
