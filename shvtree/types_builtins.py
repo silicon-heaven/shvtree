@@ -2,6 +2,7 @@
 
 from . import namedset
 from .types import (
+    SHVTypeAlias,
     SHVTypeAnyIMap,
     SHVTypeAnyMap,
     SHVTypeBase,
@@ -37,7 +38,8 @@ shvList = SHVTypeList("List")
 shvMap = SHVTypeAnyMap()
 shvIMap = SHVTypeAnyIMap()
 
-shvGetParam = SHVTypeOneOf("_getParam", shvNull, shvString)
+shvOptionalString = SHVTypeOneOf("OptionalString", shvNull, shvString)
+shvGetParam = SHVTypeAlias("_getParam", shvOptionalString)
 
 
 shvBuiltins: namedset.NamedSet[SHVTypeBase] = namedset.NamedSet(
@@ -62,5 +64,6 @@ shvBuiltins: namedset.NamedSet[SHVTypeBase] = namedset.NamedSet(
     shvList,
     shvMap,
     shvIMap,
+    shvOptionalString,
     shvGetParam,
 )

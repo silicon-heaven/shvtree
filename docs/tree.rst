@@ -140,6 +140,7 @@ design. These types are some modification on core types.
 * ``UInt16`` is unsigned integer number with at most 16 bits.
 * ``UInt32`` is unsigned integer number with at most 32 bits.
 * ``UInt64`` is unsigned integer number with at most 64 bits.
+* ``OptionalString`` allows either ``String`` or ``Null``.
 
 Custom types
 ````````````
