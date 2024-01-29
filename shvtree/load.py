@@ -1,4 +1,5 @@
 """Implementation of loading and validation of the SHV Tree."""
+import collections
 import collections.abc
 import decimal
 import json
@@ -99,12 +100,12 @@ def load_raw(data: typing.Any) -> SHVTree:
 class _TypesLoader:
     def __init__(self, data: collections.abc.Mapping[str, typing.Any]) -> None:
         self.types: namedset.NamedSet[SHVTypeBase] = namedset.NamedSet()
-        self.to_load = set(data.keys())
+        self.to_load = collections.deque(data.keys())
         self.data = data
 
     def load_all(self) -> namedset.NamedSet[SHVTypeBase]:
         while self.to_load:
-            self.load(self.to_load.pop())
+            self.load(self.to_load.popleft())
         return self.types
 
     def get_type(
@@ -122,6 +123,7 @@ class _TypesLoader:
             if value in self.types:
                 return self.types[value]
             if value in self.to_load:
+                self.to_load.remove(value)
                 self.load(value)
                 return self.types[value]
         elif isinstance(value, collections.abc.Sequence):
@@ -138,7 +140,6 @@ class _TypesLoader:
         location = ["types", name]
         if name in shvBuiltins:
             raise SHVTreeValueError(location, "Redefining builtin types is not allowed")
-        self.to_load.discard(name)
         value = self.data[name]
         if isinstance(value, str):
             alias = SHVTypeAlias(name)
