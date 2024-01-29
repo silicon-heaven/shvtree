@@ -36,6 +36,7 @@ lint = [
 
 [project.scripts]
 shvtree-check = "shvtree.check.__main__:main"
+shvtree-size = "shvtree.size.__main__:main"
 shvtree-dummy = "shvtree.device.__main__:main"
 
 [build-system]

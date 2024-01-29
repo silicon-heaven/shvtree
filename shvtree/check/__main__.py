@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "file",
         nargs=argparse.REMAINDER,
-        help="Files to count foos in. Stdin is used if none is specified.",
+        help="SHV Tree description file. Stdin is used if none is specified.",
     )
     return parser.parse_args()
 
@@ -77,7 +77,11 @@ def main() -> int:
     else:
         valid = do_check("-", disable)
 
-    return 0 if valid else 1
+    if valid:
+        if sys.stdout.isatty():
+            print("No issues found.")
+        return 0
+    return 1
 
 
 if __name__ == "__main__":
