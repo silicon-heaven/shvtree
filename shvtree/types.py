@@ -145,14 +145,11 @@ class SHVTypeOneOf(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
         return any(tp.validate(value) for tp in self)
 
     def chainpack_bytes(self) -> int | None:
-        res = -1
+        res = 0
         for tp in self._types:
-            size = tp.chainpack_bytes()
-            if size is None:
+            if (v := tp.chainpack_bytes()) is None:
                 return None
-            res = max(res, size)
-        if res < 0:
-            return None
+            res = max(res, v)
         return res
 
 
@@ -323,7 +320,7 @@ class SHVTypeInt(SHVTypeBase):
         if self._minimum is not None and self._maximum is not None:
             if self._minimum >= 0 and self._maximum < 64:
                 return 1  # packed in schema
-            bits = max(abs(self._minimum), abs(self._maximum)).bit_length() - 1
+            bits = max(abs(self._minimum), abs(self._maximum)).bit_length()
             if not self._unsigned:
                 bits += 1  # sign bit
             if bits <= 7:
@@ -531,19 +528,12 @@ class SHVTypeString(SHVTypeBase):
             and value.pattern == self.pattern
         )
 
-    def length(self) -> SHVTypeInt:
-        return SHVTypeInt(
-            self.name + "-length", minimum=self.min_length, maximum=self.max_length
-        )
-
     def chainpack_bytes(self) -> int | None:
         # Note: we do not investigate pattern so we consider only maximum length
         # to calculate required bytes.
-        length = self.length().chainpack_bytes()
-        if length is not None:
-            assert self.max_length is not None  # couldn't calculate length otherwise
-            return 1 + length + self.max_length
-        return None
+        if self.max_length is None:
+            return None
+        return 1 + len(shv.ChainPack.pack_uint_data(self.max_length)) + self.max_length
 
 
 class SHVTypeBlob(SHVTypeBase):
@@ -589,17 +579,10 @@ class SHVTypeBlob(SHVTypeBase):
             and value.max_length == self.max_length
         )
 
-    def length(self) -> SHVTypeInt:
-        return SHVTypeInt(
-            self.name + "-length", minimum=self.min_length, maximum=self.max_length
-        )
-
     def chainpack_bytes(self) -> int | None:
-        length = self.length().chainpack_bytes()
-        if length is not None:
-            assert self.max_length is not None  # couldn't calculate length otherwise
-            return 1 + length + self.max_length
-        return None
+        if self.max_length is None:
+            return None
+        return 1 + len(shv.ChainPack.pack_uint_data(self.max_length)) + self.max_length
 
 
 class SHVTypeDateTime(SHVTypeBase):
@@ -830,6 +813,13 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
             raise ValueError(f"These unsued bits were set: {bin(value)}")
         return res
 
+    def integer(self) -> SHVTypeInt:
+        """Integer representing this enum."""
+        return SHVTypeInt(self.name + "-integer", 0, 2 ** self.bitsize())
+
+    def chainpack_bytes(self) -> int | None:
+        return self.integer().chainpack_bytes()
+
     @staticmethod
     def type_span(tp: SHVTypeBase) -> int | None:
         """Calculate the bits span needed for this type.
@@ -932,6 +922,11 @@ class SHVTypeList(SHVTypeBase):
             and all(self.allowed.validate(item) for item in value)
         )
 
+    def chainpack_bytes(self) -> int | None:
+        if self.maxlen is None or (siz := self.allowed.chainpack_bytes()) is None:
+            return None
+        return 2 + (self.maxlen * siz)
+
 
 class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
     """The List type that expects specific types on specific indexes.
@@ -970,15 +965,33 @@ class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
     def chainpack_bytes(self) -> int | None:
         res = 2
         for tp in self:
-            tpsize = tp.chainpack_bytes()
-            if tpsize is None:
+            if (siz := tp.chainpack_bytes()) is None:
                 return None
-            res += tpsize
+            res += siz
         return res
 
 
-class SHVTypeMap(SHVTypeBase, dict[str, SHVTypeBase]):
+class SHVTypeAnyMap(SHVTypeBase):
     """The native SHV type where there is value assigned per string key."""
+
+    __obj = None
+
+    def __new__(cls) -> SHVTypeAnyMap:
+        if cls.__obj is None:
+            cls.__obj = object.__new__(cls)
+        return cls.__obj
+
+    def __init__(self) -> None:
+        super().__init__("Map")
+
+    def validate(self, value: object) -> bool:
+        return isinstance(value, collections.abc.Mapping) and all(
+            isinstance(k, str) and shvAny.validate(v) for k, v in value.items()
+        )
+
+
+class SHVTypeMap(SHVTypeBase, dict[str, SHVTypeBase]):
+    """The SHV Map type with predefined keys."""
 
     def __init__(self, name: str, **fields: SHVTypeBase):
         """Initialize new List type.
@@ -994,7 +1007,32 @@ class SHVTypeMap(SHVTypeBase, dict[str, SHVTypeBase]):
             key in self and self[key].validate(item) for key, item in value.items()
         )
 
-    # TODO implement chainpack_bytes
+    def chainpack_bytes(self) -> int | None:
+        res = 2
+        for k, tp in self.items():
+            if (siz := tp.chainpack_bytes()) is None:
+                return None
+            res += _chainpack_bytes(k) + siz
+        return res
+
+
+class SHVTypeAnyIMap(SHVTypeBase):
+    """The native SHV type where there is value assigned per integer key."""
+
+    __obj = None
+
+    def __new__(cls) -> SHVTypeAnyIMap:
+        if cls.__obj is None:
+            cls.__obj = object.__new__(cls)
+        return cls.__obj
+
+    def __init__(self) -> None:
+        super().__init__("IMap")
+
+    def validate(self, value: object) -> bool:
+        return isinstance(value, collections.abc.Mapping) and all(
+            isinstance(k, int) and shvAny.validate(v) for k, v in value.items()
+        )
 
 
 class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVTypeBase]):
@@ -1059,8 +1097,12 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
         return True
 
     def chainpack_bytes(self) -> int | None:
-        # TODO
-        return None
+        res = 2
+        for i, tp in self.items():
+            if (siz := tp.chainpack_bytes()) is None:
+                return None
+            res += _chainpack_bytes(i) + siz
+        return res
 
 
 class SHVTypeConstant(SHVTypeBase):

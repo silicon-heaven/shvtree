@@ -2,6 +2,8 @@
 
 from . import namedset
 from .types import (
+    SHVTypeAnyIMap,
+    SHVTypeAnyMap,
     SHVTypeBase,
     SHVTypeBlob,
     SHVTypeDateTime,
@@ -32,6 +34,8 @@ shvString = SHVTypeString("String")
 shvBlob = SHVTypeBlob("Blob")
 shvDateTime = SHVTypeDateTime()
 shvList = SHVTypeList("List")
+shvMap = SHVTypeAnyMap()
+shvIMap = SHVTypeAnyIMap()
 
 shvGetParam = SHVTypeOneOf("_getParam", shvNull, shvString)
 
@@ -56,5 +60,7 @@ shvBuiltins: namedset.NamedSet[SHVTypeBase] = namedset.NamedSet(
     shvBlob,
     shvDateTime,
     shvList,
+    shvMap,
+    shvIMap,
     shvGetParam,
 )

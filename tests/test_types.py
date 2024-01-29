@@ -5,8 +5,10 @@ import decimal
 import pytest
 
 from shvtree import (
+    SHVTypeAlias,
     SHVTypeBitfield,
     SHVTypeBlob,
+    SHVTypeConstant,
     SHVTypeDecimal,
     SHVTypeDouble,
     SHVTypeEnum,
@@ -16,18 +18,21 @@ from shvtree import (
     SHVTypeMap,
     SHVTypeOneOf,
     SHVTypeString,
+    SHVTypeTuple,
     shvAny,
     shvBlob,
     shvBool,
     shvDateTime,
     shvDecimal,
     shvDouble,
+    shvIMap,
     shvInt,
     shvInt8,
     shvInt16,
     shvInt32,
     shvInt64,
     shvList,
+    shvMap,
     shvNull,
     shvString,
     shvUInt,
@@ -53,6 +58,8 @@ from shvtree import (
         (shvString, types.SHVTypeString("String")),
         (shvDateTime, types.SHVTypeDateTime()),
         (shvList, types.SHVTypeList("List")),
+        (shvMap, types.SHVTypeAnyMap()),
+        (shvIMap, types.SHVTypeAnyIMap()),
     ],
 )
 def test_signletons(obj1, obj2):
@@ -159,6 +166,55 @@ def test_invalid(shvtype, value):
 )
 def test_int_bytes_size(inttype, cnt):
     assert inttype.bytes_size() == cnt
+
+
+@pytest.mark.parametrize(
+    "shvtype,siz",
+    (
+        (shvAny, None),
+        (SHVTypeAlias("foo", shvInt8), 3),
+        (SHVTypeAlias("foo", shvInt), None),
+        (SHVTypeOneOf("foo", shvInt8, shvUInt8, shvInt16), 4),
+        (SHVTypeOneOf("foo", shvInt8, shvInt, shvInt16), None),
+        (SHVTypeOneOf("foo"), 0),
+        (shvNull, 1),
+        (shvBool, 1),
+        (SHVTypeInt("foo", minimum=0, maximum=42), 1),
+        (SHVTypeInt("foo", minimum=0, maximum=65), 2),
+        (SHVTypeInt("foo", minimum=-1, maximum=1), 2),
+        (SHVTypeInt("foo", minimum=0, maximum=127), 2),
+        (SHVTypeInt("foo", minimum=0, maximum=128), 3),
+        (shvUInt8, 3),
+        (shvInt8, 3),
+        (shvInt16, 4),
+        (shvDouble, 65),
+        # TODO decimal
+        (shvString, None),
+        (SHVTypeString("foo", max_length=9), 11),
+        (SHVTypeString("foo", max_length=127), 129),
+        (SHVTypeString("foo", max_length=128), 131),
+        (shvBlob, None),
+        (SHVTypeBlob("foo", max_length=9), 11),
+        (SHVTypeBlob("foo", max_length=127), 129),
+        (SHVTypeBlob("foo", max_length=128), 131),
+        (shvDateTime, 9),
+        (SHVTypeEnum("foo", "one", "two"), 1),
+        (SHVTypeEnum("foo", "one", last=65), 2),
+        (SHVTypeBitfield("foo", shvBool, shvBool), 1),
+        (SHVTypeBitfield("foo", shvBool, shvUInt8), 3),
+        (shvList, None),
+        (SHVTypeList("foo", allowed=shvBool, maxlen=3), 5),
+        (SHVTypeTuple("foo", shvBool, shvUInt8), 6),
+        (SHVTypeTuple("foo", shvBool, shvUInt8), 6),
+        (shvMap, None),
+        (SHVTypeMap("foo", one=shvBool, two=shvUInt8), 16),
+        (shvIMap, None),
+        (SHVTypeIMap("foo", shvBool, shvUInt8), 8),
+        (SHVTypeConstant("foo", "foo"), 5),
+    ),
+)
+def test_chainpack_size(shvtype, siz):
+    assert shvtype.chainpack_bytes() == siz
 
 
 @pytest.mark.parametrize(
