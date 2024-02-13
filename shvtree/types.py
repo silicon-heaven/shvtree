@@ -214,9 +214,9 @@ class SHVTypeInt(SHVTypeBase):
     def __new__(
         cls,
         name: str,
-        minimum: decimal.Decimal | None = None,
-        maximum: decimal.Decimal | None = None,
-        multiple_of: decimal.Decimal | None = None,
+        minimum: int | None = None,
+        maximum: int | None = None,
+        multiple_of: int | None = None,
         unsigned: bool | None = None,
     ) -> "SHVTypeInt":
         if maximum is None and multiple_of is None:

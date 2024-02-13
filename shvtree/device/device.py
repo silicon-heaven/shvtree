@@ -8,7 +8,7 @@ import typing
 
 import shv
 
-from .. import SHVMethod, SHVNode, SHVTree
+from .. import SHVMethod, SHVNode, SHVTree, SHVTypeInt
 
 logger = logging.getLogger(__name__)
 
@@ -122,10 +122,14 @@ class SHVTreeDevice(shv.SimpleClient):
         :param result: Result provided by method.
         :return: Result that is sent as response to the request.
         """
-        if not args["method"].result.validate(result):
+        tp = args["method"].result
+        if not tp.validate(result):
             raise shv.RpcMethodCallExceptionError(
                 f"Implementation produced result of invalid type: {str(result)}."
             )
+        if isinstance(tp, SHVTypeInt) and tp.unsigned:
+            assert isinstance(result, int)
+            return shv.SHVUInt(result)
         return result
 
     def _get_method_impl(
