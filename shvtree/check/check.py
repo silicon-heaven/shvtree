@@ -1,4 +1,5 @@
 """Checker and suggester for the SHVTree."""
+
 import enum
 import itertools
 

@@ -1,4 +1,5 @@
 """Check device with shvtree."""
+
 import dataclasses
 
 import pytest
@@ -49,7 +50,12 @@ class EmptyDevice(SHVTreeDevice):
 
 @pytest.fixture(name="device")
 async def fixture_device(broker, url):
-    nurl = dataclasses.replace(url, device_mount_point="test")
+    nurl = dataclasses.replace(
+        url,
+        login=dataclasses.replace(
+            url.login, options={"device": {"deviceId": "example", "mountPoint": "test"}}
+        ),
+    )
     client = await TreeDevice.connect(nurl)
     yield client
     await client.disconnect()
@@ -57,7 +63,12 @@ async def fixture_device(broker, url):
 
 @pytest.fixture(name="invalid_device")
 async def fixture_invalid_device(broker, url):
-    nurl = dataclasses.replace(url, device_mount_point="test")
+    nurl = dataclasses.replace(
+        url,
+        login=dataclasses.replace(
+            url.login, options={"device": {"deviceId": "example", "mountPoint": "test"}}
+        ),
+    )
     client = await TreeDeviceInvalid.connect(nurl)
     yield client
     await client.disconnect()
@@ -65,7 +76,13 @@ async def fixture_invalid_device(broker, url):
 
 @pytest.fixture(name="empty_device")
 async def fixture_empty_device(broker, url):
-    nurl = dataclasses.replace(url, device_mount_point="empty")
+    nurl = dataclasses.replace(
+        url,
+        login=dataclasses.replace(
+            url.login,
+            options={"device": {"deviceId": "example", "mountPoint": "empty"}},
+        ),
+    )
     client = await EmptyDevice.connect(nurl)
     yield client
     await client.disconnect()
@@ -100,22 +117,23 @@ async def test_empty_ls_invalid(empty_device, client):
 
 @pytest.mark.parametrize(
     "path,expected",
-    list(
-        (
+    [
+        [
             f"test/{path}",
-            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls(), RpcMethodDesc.stdlschng()]
+            [RpcMethodDesc.stddir(), RpcMethodDesc.stdls()]
             + (
                 [
                     RpcMethodDesc.getter("shvVersionMajor", param="Null", result="Int"),
                     RpcMethodDesc.getter("shvVersionMinor", param="Null", result="Int"),
                     RpcMethodDesc.getter("name", param="Null", result="String"),
                     RpcMethodDesc.getter("version", param="Null", result="String"),
+                    RpcMethodDesc.getter("date", "Null", "DateTime"),
                     RpcMethodDesc("ping"),
                 ]
                 if path == ".app"
                 else []
             )
-            + list(m.descriptor for m in node.methods.values())
+            + [m.descriptor for m in node.methods.values()]
             + (
                 [
                     RpcMethodDesc.getter(
@@ -128,9 +146,9 @@ async def test_empty_ls_invalid(empty_device, client):
                 if node.description
                 else []
             ),
-        )
+        ]
         for path, node in iter(tree1)
-    ),
+    ],
 )
 async def test_dir(device, client, path, expected):
     """Check that we can list all methods with details in the tree."""
@@ -147,7 +165,6 @@ async def test_empty_dir(empty_device, client):
     assert await client.dir("empty") == [
         RpcMethodDesc.stddir(),
         RpcMethodDesc.stdls(),
-        RpcMethodDesc.stdlschng(),
     ]
 
 
@@ -176,7 +193,7 @@ async def test_invalid_path(device, client):
 
 
 async def test_invalid_param(device, client):
-    with pytest.raises(shv.RpcInvalidParamsError):
+    with pytest.raises(shv.RpcInvalidParamError):
         await client.call("test/properties/boolean", "set", 42)
 
 

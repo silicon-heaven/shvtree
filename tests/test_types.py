@@ -1,4 +1,5 @@
 """Check that we have correctly implemented types descriptions."""
+
 import datetime
 import decimal
 

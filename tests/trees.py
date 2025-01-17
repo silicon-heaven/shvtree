@@ -1,4 +1,5 @@
 """The parsed representations of yaml trees."""
+
 from shv import RpcMethodFlags
 
 from shvtree import (

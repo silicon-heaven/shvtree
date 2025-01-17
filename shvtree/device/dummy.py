@@ -1,4 +1,5 @@
 """The implementation that creates dummy device out of any tree."""
+
 # pylint: disable=C0103
 import collections.abc
 import datetime
@@ -155,7 +156,7 @@ class SHVTreeDummyDevice(SHVTreeDevice):
         if isinstance(method.param, SHVTypeDateTime):
             assert isinstance(param, datetime.datetime)
             if param.tzinfo is not None and param.tzinfo != datetime.timezone.utc:
-                raise shv.RpcInvalidParamsError("DateTime must be in UTC")
+                raise shv.RpcInvalidParamError("DateTime must be in UTC")
             self.dummy_time_offset = (
                 param.replace(tzinfo=None) - datetime.datetime.utcnow()
             )

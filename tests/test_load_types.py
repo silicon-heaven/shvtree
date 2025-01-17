@@ -1,4 +1,5 @@
 """Validate loading types from basic type representation."""
+
 import decimal
 
 import pytest

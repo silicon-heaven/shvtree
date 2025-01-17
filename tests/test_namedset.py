@@ -1,4 +1,5 @@
 """Check our genericc implementation for set of named objects."""
+
 import pytest
 
 from shvtree.namedset import Named, NamedSet

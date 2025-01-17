@@ -1,4 +1,5 @@
 """Test that our checker works as epxected."""
+
 from shvtree.check import check
 
 from . import trees

@@ -1,4 +1,5 @@
 """Implementation of special set of named objects."""
+
 from __future__ import annotations
 
 import collections.abc

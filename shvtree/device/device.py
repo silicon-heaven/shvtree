@@ -1,4 +1,5 @@
 """The implementation of common device based on provided SHV Tree."""
+
 import asyncio
 import collections.abc
 import inspect
@@ -55,18 +56,24 @@ class SHVTreeDevice(shv.SimpleClient):
             for m in node.methods.values():
                 yield m.descriptor
             if node.description:
+                flags = shv.RpcMethodFlags.GETTER
+                if len(node.description) > 1024:
+                    flags |= shv.RpcMethodFlags.LARGE_RESULT_HINT
                 yield shv.RpcMethodDesc(
-                    "desc",
-                    shv.RpcMethodFlags.GETTER | 0
-                    if len(node.description) <= 1024
-                    else shv.RpcMethodFlags.LARGE_RESULT_HINT,
-                    "Null",
-                    "String",
-                    shv.RpcMethodAccess.BROWSE,
+                    name="desc",
+                    flags=flags,
+                    param="Null",
+                    result="String",
+                    access=shv.RpcMethodAccess.BROWSE,
                 )
 
     async def _method_call(
-        self, path: str, method: str, access: shv.RpcMethodAccess, param: shv.SHVType
+        self,
+        path: str,
+        method: str,
+        param: shv.SHVType,
+        access: shv.RpcMethodAccess,
+        user_id: str | None,
     ) -> shv.SHVType:
         args = {
             "path": path,
@@ -75,6 +82,7 @@ class SHVTreeDevice(shv.SimpleClient):
             "method_path": f"{path}:{method}",
             "access": access,
             "param": param,
+            "user_id": user_id,
         }
         impl = self._get_method_impl(args)
         if impl is None:
@@ -84,7 +92,9 @@ class SHVTreeDevice(shv.SimpleClient):
                 and node.description
             ):
                 return node.description.strip()
-            return await super()._method_call(path, method, access, param)
+            return await super()._method_call(
+                path=path, method=method, param=param, access=access, user_id=user_id
+            )
         impl_param = inspect.signature(impl).parameters
         await self._pre_call(args)
         res = impl(**{key: value for key, value in args.items() if key in impl_param})
@@ -103,7 +113,7 @@ class SHVTreeDevice(shv.SimpleClient):
         :param args: Arguments available to the method implementation.
         """
         if not args["method"].param.validate(args["param"]):
-            raise shv.RpcInvalidParamsError("Invalid parameters were provided")
+            raise shv.RpcInvalidParamError("Invalid parameters were provided")
 
     async def _post_call(
         self, args: dict[str, typing.Any], result: shv.SHVType
@@ -202,7 +212,7 @@ class SHVTreeDevice(shv.SimpleClient):
             [shv.SHVType], typing.Coroutine[typing.Any, typing.Any, None]
         ]:
             method = self.__node.methods.get(attr, None)
-            if method is None or shv.RpcMethodFlags.SIGNAL not in method.flags:
+            if method is None or shv.RpcMethodFlags.NOT_CALLABLE not in method.flags:
                 raise AttributeError
 
             async def func(value: shv.SHVType) -> None:

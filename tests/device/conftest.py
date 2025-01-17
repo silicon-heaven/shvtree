@@ -1,7 +1,5 @@
-import asyncio
-
 import pytest
-from shv import RpcLoginType, RpcMethodAccess, RpcUrl, ValueClient
+from shv import RpcLogin, RpcLoginType, RpcMethodAccess, RpcUrl, ValueClient
 from shv.broker import RpcBroker, RpcBrokerConfig
 
 
@@ -16,26 +14,35 @@ def fixture_url(port):
     """Provides RpcUrl for connecting to the broker."""
     return RpcUrl(
         location="localhost",
-        port=port,
-        username="admin",
-        password="admin!123",
-        login_type=RpcLoginType.PLAIN,
+        port=3755,
+        login=RpcLogin(
+            username="admin",
+            password="admin!123",
+            login_type=RpcLoginType.PLAIN,
+        ),
     )
 
 
 @pytest.fixture(name="broker_config", scope="module")
 def fixture_broker_config(url):
     """Configuration for the broker."""
-    config = RpcBrokerConfig()
-    config.listen = {"test": url}
     role_admin = RpcBrokerConfig.Role(
-        "admin", RpcMethodAccess.DEVEL, frozenset({RpcBrokerConfig.Method()})
+        name="admin",
+        mount_points={"**"},
+        access={RpcMethodAccess.DEVEL: {"**:*"}},
     )
-    config.add_role(role_admin)
     user_admin = RpcBrokerConfig.User(
-        "admin", "admin!123", RpcLoginType.PLAIN, frozenset({role_admin})
+        name="admin",
+        password="admin!123",
+        roles=["admin"],
+        login_type=RpcLoginType.PLAIN,
     )
-    config.add_user(user_admin)
+    config = RpcBrokerConfig(
+        name="testbroker",
+        listen=[url],
+        roles=[role_admin],
+        users=[user_admin],
+    )
     return config
 
 

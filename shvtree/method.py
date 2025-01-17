@@ -1,4 +1,5 @@
 """The SHV node's method description."""
+
 from __future__ import annotations
 
 import shv
@@ -47,7 +48,7 @@ class SHVMethod(namedset.Named):
         description: str = "",
     ) -> SHVMethod:
         """Initialize new method that is signal."""
-        nflags = flags | shv.RpcMethodFlags.SIGNAL
+        nflags = flags | shv.RpcMethodFlags.NOT_CALLABLE
         return cls(name, shvNull, dtype, nflags, access, description)
 
     @classmethod
@@ -99,10 +100,10 @@ class SHVMethod(namedset.Named):
     def descriptor(self) -> shv.RpcMethodDesc:
         """SHV RPC method descriptor."""
         return shv.RpcMethodDesc(
-            self.name,
-            self.flags,
-            self.param.name or "Null",
-            self.result.name or "Null",
-            self.access,
-            self.description,
+            name=self.name,
+            flags=self.flags,
+            param=self.param.name or "Null",
+            result=self.result.name or "Null",
+            access=self.access,
+            extra={"description": self.description},
         )

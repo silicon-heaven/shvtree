@@ -1,4 +1,5 @@
 """Check dummy device."""
+
 import dataclasses
 import datetime
 
@@ -15,7 +16,12 @@ class TreeDevice(SHVTreeDummyDevice):
 
 @pytest.fixture(name="device")
 async def fixture_device(broker, url):
-    nurl = dataclasses.replace(url, device_mount_point="test")
+    nurl = dataclasses.replace(
+        url,
+        login=dataclasses.replace(
+            url.login, options={"device": {"deviceId": "example", "mountPoint": "test"}}
+        ),
+    )
     client = await TreeDevice.connect(nurl)
     yield client
     await client.disconnect()

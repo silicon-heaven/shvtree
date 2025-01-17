@@ -1,4 +1,5 @@
 """Implementation of loading and validation of the SHV Tree."""
+
 import collections
 import collections.abc
 import decimal

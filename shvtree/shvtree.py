@@ -1,4 +1,5 @@
 """Implementation of the top level SHV tree class."""
+
 from . import namedset
 from .node import SHVNode
 from .types import SHVTypeBase
@@ -41,12 +42,10 @@ class SHVTree(SHVNode):
         return self.types[name]
 
     def __str__(self) -> str:
-        return super().__str__() + str(
-            {
-                "types": str(self.types),
-                "nodes": str(self.nodes),
-            }
-        )
+        return super().__str__() + str({
+            "types": str(self.types),
+            "nodes": str(self.nodes),
+        })
 
     def __eq__(self, other: object) -> bool:
         return super().__eq__(other) and (

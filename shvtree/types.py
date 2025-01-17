@@ -1,4 +1,5 @@
 """Implementation of SHV and custom types."""
+
 from __future__ import annotations
 
 import abc

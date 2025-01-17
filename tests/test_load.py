@@ -1,4 +1,5 @@
 """Validate loading from basic representation."""
+
 import pytest
 
 from shvtree import NamedSet, SHVNode, SHVTree
