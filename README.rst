@@ -1,4 +1,3 @@
-===================
 Silicon Heaven Tree
 ===================
 .. image:: docs/_static/logo.svg
@@ -16,9 +15,9 @@ methods and basic type description. The core of this project is definition of
 format describing the tree but it also provides SHV device implementation based
 on the provided tree.
 
-* `📃 Sources <https://gitlab.com/elektroline-predator/shvtree>`__
-* `⁉️ Issue tracker <https://gitlab.com/elektroline-predator/shvtree/-/issues>`__
-* `📕 Documentation <https://elektroline-predator.gitlab.io/shvtree/>`__
+* `📃 Sources <https://gitlab.com/silicon-heaven/shvtree>`__
+* `⁉️ Issue tracker <https://gitlab.com/silicon-heaven/shvtree/-/issues>`__
+* `📕 Documentation <https://silicon-heaven.gitlab.io/shvtree/>`__
 
 
 Installation
@@ -34,22 +33,23 @@ The installation can be done with package manager ``pip``.
 Running tests
 -------------
 
-This project contains tests in directory ``tests``.
+This project contains basic tests in directory ``tests``; see the dependencies
+in the `pyproject.toml` file.
 
-To run tests you have to use **pytest**. To run all tests just run it in the top
-level directory of the project. See the `pytest documentation
-<https://docs.pytest.org/>`__ for more info.
+To run tests you have to use **pytest**. To run all tests just run it in the
+top level directory of the project::
+
+    pytest
+
+See the `pytest documentation <https://docs.pytest.org/>`__ for more info.
 
 
 Documentation
 -------------
 
-The documentation is stored in `docs` directory. You can build the latest
-version from the source code using:
+The documentation is available in ``docs`` directory. You can build it using::
 
-.. code-block:: console
-
-    $ sphinx-build -b html docs docs-html
+    sphinx-build -b html docs docs-html
 
 
 .. [*] Project logo is assembled from images by Freepik

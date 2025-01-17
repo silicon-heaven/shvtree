@@ -1,138 +1,100 @@
 {
   description = "Python SHV Tree";
-  inputs.pyshv.url = "github:silicon-heaven/pyshv";
+
+  inputs = {
+    pyshv.url = "git+https://gitlab.com/silicon-heaven/pyshv";
+  };
 
   outputs = {
     self,
     flake-utils,
     nixpkgs,
     pyshv,
-  }:
-    with builtins;
-    with flake-utils.lib;
-    with nixpkgs.lib; let
-      pyproject = trivial.importTOML ./pyproject.toml;
-      src = builtins.path {
-        path = ./.;
-        filter = path: type: ! hasSuffix ".nix" path;
-      };
+  }: let
+    inherit (builtins) match;
+    inherit (flake-utils.lib) eachDefaultSystem filterPackages;
+    inherit (nixpkgs.lib) head foldl trivial hasSuffix attrValues getAttrs composeManyExtensions;
 
-      pypy2nix_map = {
-        "ruamel.yaml" = "ruamel-yaml";
-      };
-      list2attr = list: attr: attrValues (getAttrs list attr);
-      pypi2nix = list:
-        list2attr (map (n: let
-          nn = elemAt (match "([^ ]*).*" n) 0;
+    pyproject = trivial.importTOML ./pyproject.toml;
+    inherit (pyproject.project) name version;
+    src = builtins.path {
+      path = ./.;
+      filter = path: _: ! hasSuffix ".nix" path;
+    };
+
+    pypi2nix = list: pypkgs:
+      attrValues (getAttrs (map (n: let
+          pyname = head (match "([^ =<>;]*).*" n);
+          pymap = {
+            "ruamel.yaml" = "ruamel-yaml";
+          };
         in
-          pypy2nix_map.${nn} or nn)
-        list);
+          pymap."${pyname}" or pyname)
+        list)
+        pypkgs);
+    requires = pypi2nix pyproject.project.dependencies;
+    requires-test = pypi2nix pyproject.project.optional-dependencies.test;
+    requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
 
-      requires = pypi2nix pyproject.project.dependencies;
-      requires-docs = pypi2nix pyproject.project.optional-dependencies.docs;
-      requires-test = pypi2nix pyproject.project.optional-dependencies.test;
-      requires-dev = p:
-        pypi2nix pyproject.project.optional-dependencies.lint p
-        ++ [p.build p.twine];
-
-      pypkg-shvtree = {
-        buildPythonPackage,
-        pytestCheckHook,
-        pythonPackages,
-        setuptools,
-        sphinxHook,
-      }:
-        buildPythonPackage {
-          pname = pyproject.project.name;
-          inherit (pyproject.project) version;
-          format = "pyproject";
-          inherit src;
-          outputs = ["out" "doc"];
-          propagatedBuildInputs = requires pythonPackages;
-          nativeBuildInputs = [setuptools sphinxHook] ++ requires-docs pythonPackages;
-          nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
+    pypackage = {
+      buildPythonPackage,
+      pytestCheckHook,
+      pythonPackages,
+      setuptools,
+      sphinxHook,
+    }:
+      buildPythonPackage {
+        pname = pyproject.project.name;
+        inherit version src;
+        pyproject = true;
+        build-system = [setuptools];
+        outputs = ["out" "doc"];
+        propagatedBuildInputs = requires pythonPackages;
+        nativeBuildInputs = [sphinxHook] ++ requires-docs pythonPackages;
+        nativeCheckInputs = [pytestCheckHook] ++ requires-test pythonPackages;
+      };
+  in
+    {
+      overlays = {
+        pythonPackagesExtension = final: _: {
+          "${name}" = final.callPackage pypackage {};
         };
-
-      pypkg-asyncinotify = {
-        buildPythonPackage,
-        fetchPypi,
-        pipBuildHook,
-        flit,
-      }:
-        buildPythonPackage rec {
-          pname = "asyncinotify";
-          version = "4.0.1";
-          src = fetchPypi {
-            inherit pname version;
-            hash = "sha256-0j3/zbPw3oMm+t7QSgshm/KL4gZ7JVo3tsudXF6Xt0E=";
-          };
-          nativeBuildInputs = [pipBuildHook flit];
-          dontUseSetuptoolsBuild = true;
-          doCheck = false;
+        noInherit = _: prev: {
+          pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
         };
+        default = composeManyExtensions [
+          self.overlays.noInherit
+          pyshv.overlays.default
+        ];
+      };
+    }
+    // eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
+    in {
+      packages.default = pkgs.python3Packages."${name}";
+      legacyPackages = pkgs;
 
-      pypkg-multiversion = {
-        buildPythonPackage,
-        fetchFromGitHub,
-        sphinx,
-      }:
-        buildPythonPackage {
-          pname = "sphinx-multiversion";
-          version = "0.2.4";
-          src = fetchFromGitHub {
-            owner = "Holzhaus";
-            repo = "sphinx-multiversion";
-            rev = "v0.2.4";
-            hash = "sha256-ZFEELAeZ/m1pap1DmS4PogL3eZ3VuhTdmwDOg5rKOPA=";
-          };
-          propagatedBuildInputs = [sphinx];
-          doCheck = false;
-        };
-    in
-      {
-        overlays = {
-          pythonPackagesExtension = final: prev: {
-            shvtree = final.callPackage pypkg-shvtree {};
-            asyncinotify = final.callPackage pypkg-asyncinotify {};
-            sphinx-multiversion = final.callPackage pypkg-multiversion {};
-          };
-          noInherit = final: prev: {
-            pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [self.overlays.pythonPackagesExtension];
-          };
-          default = composeManyExtensions [
-            pyshv.overlays.default
-            self.overlays.noInherit
+      devShells = filterPackages system {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            editorconfig-checker
+            statix
+            deadnix
+            gitlint
+            ruff
+            (python3.withPackages (p:
+              [p.build p.twine p.sphinx-autobuild p.mypy]
+              ++ foldl (prev: f: prev ++ f p) [] [
+                requires
+                requires-docs
+                requires-test
+              ]))
           ];
         };
-      }
-      // eachDefaultSystem (system: let
-        pkgs = nixpkgs.legacyPackages.${system}.extend self.overlays.default;
-      in {
-        packages = {
-          inherit (pkgs.python3Packages) shvtree;
-          default = pkgs.python3Packages.shvtree;
-        };
-        legacyPackages = pkgs;
+      };
 
-        devShells = filterPackages system {
-          default = pkgs.mkShell {
-            packages = with pkgs; [
-              editorconfig-checker
-              gitlint
-              (python3.withPackages (p:
-                [p.sphinx-autobuild]
-                ++ foldl (prev: f: prev ++ f p) [] [
-                  requires
-                  requires-docs
-                  requires-test
-                  requires-dev
-                ]))
-            ];
-          };
-        };
+      checks.default = self.packages.${system}.default;
 
-        checks.default = self.packages.${system}.default;
-
-        formatter = pkgs.alejandra;
-      });
+      formatter = pkgs.alejandra;
+    });
 }

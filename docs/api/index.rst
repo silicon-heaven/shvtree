@@ -2,8 +2,11 @@ API reference
 =============
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    shvtree
-   check
    device
+   check
+   size
+
+:ref:`genindex`

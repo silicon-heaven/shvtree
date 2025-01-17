@@ -1,8 +1,4 @@
-===================
-Silicon Heaven Tree
-===================
 .. include:: ../README.rst
-   :start-line: 7
 
 Table of contents
 -----------------
@@ -10,6 +6,7 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
+   CHANGELOG
    tree
    device
    api/index

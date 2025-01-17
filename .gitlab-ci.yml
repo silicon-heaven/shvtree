@@ -71,16 +71,21 @@ include:
   extends: .nix
   needs: ["devenv"]
 
-pylint:
+lint:
   extends: .lint
   script:
-    - nix develop --quiet -c pylint --output-format=colorized .
+    - nix develop --quiet -c ruff check .
 
 mypy:
   extends: .lint
   script:
     - mkdir .mypy-cache
-    - nix develop --quiet -c mypy --cache-dir .mypy-cache --install-types --non-interactive .
+    - nix develop --quiet -c mypy --cache-dir .mypy-cache .
+
+statix:
+  extends: .lint
+  script:
+    - nix develop --quiet -c statix check .
 
 ## Style stage #################################################################
 .style:
@@ -89,20 +94,22 @@ mypy:
   needs: ["devenv"]
   allow_failure: true
 
-black:
+format:
   extends: .style
   script:
-    - nix develop --quiet -c black --diff --check .
+    - nix develop --quiet -c ruff format --diff .
+    - nix develop --quiet -c ruff check --diff .
 
-isort:
+nixfmt:
   extends: .style
   script:
-    - nix develop --quiet -c isort --diff --check .
+    - nix fmt
+    - git diff --exit-code
 
-pydocstyle:
+deadnix:
   extends: .style
   script:
-    - nix develop --quiet -c pydocstyle --match='(?!tests/)*.py' .
+    - nix develop --quiet -c deadnix --fail .
 
 editorconfig-checker:
   extends: .style
@@ -132,7 +139,7 @@ release:
     - apk add bash curl jq py3-pip
     - pip install yq
   script:
-    - bash .release.sh
+    - bash release.sh
 
 gitlab-pypi:
   extends: [.nix, .deploy]

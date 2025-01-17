@@ -1,4 +1,5 @@
 """SHV Tree Python representation."""
+from .__version__ import VERSION
 from .load import load, load_json, load_raw, load_yaml
 from .method import SHVMethod
 from .namedset import Named, NamedSet
@@ -50,6 +51,7 @@ from .types_builtins import (
 )
 
 __all__ = [
+    "VERSION",
     # shvtree
     "SHVTree",
     # load

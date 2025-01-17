@@ -11,7 +11,6 @@ project = "Silicon Heaven Tree"
 copyright = "SPDX-License-Identifier: MIT"
 author = "Elektroline a.s."
 
-
 extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
@@ -19,7 +18,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx_rtd_theme",
-    "sphinx_multiversion",
+    "sphinx_mdinclude",
 ]
 
 templates_path = ["_templates"]
@@ -45,7 +44,7 @@ autodoc_default_options = {
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "shv": ("https://elektroline-predator.gitlab.io/pyshv/master", None),
+    "shv": ("https://silicon-heaven.gitlab.io/pyshv/master/", None),
 }
 
 smv_tag_whitelist = r"^v.*$"
