@@ -35,22 +35,22 @@ from shvtree.namedset import NamedSet
 
 from . import trees
 
-_nullAlias = SHVTypeAlias("nullAlias", shvNull)
+_nullAlias = SHVTypeAlias("nullAlias", shvNull)  # noqa N816
 
-_myIMapEnum = SHVTypeEnum("myimapEnum", "one", "two")
+_myIMapEnum = SHVTypeEnum("myimapEnum", "one", "two")  # noqa N816
 _myIMapEnum["seven"] = 7
 
-_myIMap = SHVTypeIMap("myimap", enum=_myIMapEnum)
+_myIMap = SHVTypeIMap("myimap", enum=_myIMapEnum)  # noqa N816
 _myIMap[0] = shvString
 _myIMap[1] = shvDateTime
 _myIMap[7] = shvBlob
 
-_sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")
+_sometupleEnum = SHVTypeEnum("sometupleEnum", "name", "surname")  # noqa N816
 
-_simpleListOneOf = SHVTypeOneOf("simplelistOneOf", _nullAlias, shvString)
-_someListOneOf = SHVTypeOneOf("somelistOneOf", shvInt, shvString)
+_simpleListOneOf = SHVTypeOneOf("simplelistOneOf", _nullAlias, shvString)  # noqa N816
+_someListOneOf = SHVTypeOneOf("somelistOneOf", shvInt, shvString)  # noqa N816
 
-_somebitEnum = SHVTypeEnum("somebitEnum", "one", "two", five=4, last=63)
+_somebitEnum = SHVTypeEnum("somebitEnum", "one", "two", five=4, last=63)  # noqa N816
 
 
 @pytest.mark.parametrize(

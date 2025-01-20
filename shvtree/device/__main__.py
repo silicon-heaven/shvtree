@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import logging
 import pathlib
-import typing
 
 import asyncinotify
 import shv
@@ -92,7 +91,7 @@ def main() -> None:
 
 
 async def inotify_watch(
-    tree_path: pathlib.Path, device: typing.Type[SHVTreeDummyDevice]
+    tree_path: pathlib.Path, device: type[SHVTreeDummyDevice]
 ) -> None:
     """Wait for changes in the source file and update the tree."""
     with asyncinotify.Inotify() as inotify:

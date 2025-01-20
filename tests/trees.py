@@ -29,8 +29,8 @@ _tree1_types_args_since = SHVTypeOneOf(
     "getLogArgsSince", shvDateTime, shvNull, _tree1_types_args_since_const_last
 )
 _tree1_types_args_until = SHVTypeOneOf("getLogArgsUntil", shvDateTime, shvNull)
-_tree1_types_errorsEnum = SHVTypeEnum("errorsEnum", "outOfRange", "lowPower")
-_tree1_types_propEnum = SHVTypeEnum(
+_tree1_types_errorsEnum = SHVTypeEnum("errorsEnum", "outOfRange", "lowPower")  # noqa N816
+_tree1_types_propEnum = SHVTypeEnum(  # noqa N816
     "propEnum", "boolean", "integer", "uinteger", "string", "dateTime"
 )
 tree1_types: NamedSet[SHVTypeBase] = NamedSet(
@@ -146,7 +146,7 @@ shvtree2_nodes: NamedSet[SHVNode] = NamedSet(
 tree2 = SHVTree(nodes=shvtree2_nodes)
 
 
-_tree1_types_xmapEnum = SHVTypeEnum("xmapEnum", "one", "two", "three")
+_tree1_types_xmapEnum = SHVTypeEnum("xmapEnum", "one", "two", "three")  # noqa N816
 shvtree3_types = NamedSet(
     _tree1_types_xmapEnum,
     SHVTypeIMap("xmap", shvInt, shvString, shvDateTime, enum=_tree1_types_xmapEnum),

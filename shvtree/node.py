@@ -18,7 +18,7 @@ class SHVNode(namedset.Named):
         nodes: namedset.NamedSet[SHVNode] | None = None,
         methods: namedset.NamedSet[SHVMethod] | None = None,
         description: str = "",
-    ):
+    ) -> None:
         """Initialize new SHV node.
 
         :param name: Name of the node.
@@ -81,7 +81,7 @@ class SHVNode(namedset.Named):
         self.methods.add(SHVMethod.new_getter(dtype))
         if not readonly:
             self.methods.add(SHVMethod.new_setter(dtype))
-        if signal or signal is None and not readonly:
+        if signal or (signal is None and not readonly):
             self.methods.add(
                 SHVMethod.new_signal(
                     signal if isinstance(signal, str) else "chng", dtype
@@ -90,8 +90,8 @@ class SHVNode(namedset.Named):
 
     def is_property(
         self,
-        readonly: typing.Optional[bool] = None,
-        signal: typing.Optional[bool] = None,
+        readonly: bool | None = None,
+        signal: bool | None = None,
     ) -> bool:
         """Check if this node has associated value.
 
@@ -111,7 +111,7 @@ class SHVNode(namedset.Named):
             res = res and (("chng" in self.methods) is signal)
         return res
 
-    def get_node(self, path: str) -> None | SHVNode:
+    def get_node(self, path: str) -> SHVNode | None:
         """Getter of the node from the tree using its path.
 
         :param path: Slash separated path to the node.
@@ -119,7 +119,7 @@ class SHVNode(namedset.Named):
         """
         node = None
         nodes = self.nodes
-        if path == "":
+        if not path:
             return self
         for name in path.split("/"):
             if name not in nodes:
@@ -155,5 +155,5 @@ class SHVNode(namedset.Named):
 class SHVPropError(RuntimeError):
     """The node can't be set to be property."""
 
-    def __init__(self, existing: str):
+    def __init__(self, existing: str) -> None:
         super().__init__(f"Node already has the following method: {existing}")

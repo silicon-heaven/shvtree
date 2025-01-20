@@ -1,4 +1,4 @@
-"""Implementation of SHV and custom types."""
+"""Implementation of SHV and custom types."""  # noqa A005 TODO
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ class SHVTypeBase(abc.ABC, namedset.Named):
         :returns: True if it matches and False otherwise
         """
 
-    def chainpack_bytes(self) -> int | None:
+    def chainpack_bytes(self) -> int | None:  # noqa PLR6301 TODO
         """Calculate maximum number of bytes to represent this type in Chainpack.
 
         :return: Number of bytes or ``None`` in case this can't be determined
@@ -50,7 +50,8 @@ class SHVTypeAny(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls) -> "SHVTypeAny":
+    def __new__(cls) -> SHVTypeAny:
+        """Construct new SHVTypeAny object."""
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -59,11 +60,12 @@ class SHVTypeAny(SHVTypeBase):
         super().__init__("Any")
 
     def validate(self, value: object) -> bool:
+        """Check if the type of ``value`` is SHVTypeAny."""
         return (
             shv.is_shvnull(value)
             or shv.is_shvbool(value)
             or isinstance(
-                value, (int, float, decimal.Decimal, bytes, str, datetime.datetime)
+                value, int | float | decimal.Decimal | bytes | str | datetime.datetime
             )
             or (
                 isinstance(value, collections.abc.Sequence)
@@ -80,13 +82,13 @@ class SHVTypeAny(SHVTypeBase):
         )
 
 
-shvAny = SHVTypeAny()  # Must be defined here for reuse not in types_builtins.py
+shvAny = SHVTypeAny()  # noqa N816 Must be defined here for reuse not in types_builtins.py
 
 
 class SHVTypeAlias(SHVTypeBase):
     """Type that provide a way to name type with multiple names."""
 
-    def __init__(self, name: str, shvtp: SHVTypeBase = shvAny):
+    def __init__(self, name: str, shvtp: SHVTypeBase = shvAny) -> None:
         """Initialize new combination of types and name it as such."""
         super().__init__(name)
         self.type = shvtp
@@ -97,16 +99,18 @@ class SHVTypeAlias(SHVTypeBase):
         )
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return self.type.validate(value)
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return self.type.chainpack_bytes()
 
 
 class SHVTypeOneOf(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
     """Type that allows one of the selected types to be returned."""
 
-    def __init__(self, name: str, *types: SHVTypeBase):
+    def __init__(self, name: str, *types: SHVTypeBase) -> None:
         """Initialize new combination of types and name it as such.
 
         :param name: Name of the new type.
@@ -129,23 +133,28 @@ class SHVTypeOneOf(SHVTypeBase, collections.abc.MutableSet[SHVTypeBase]):
         return len(self._types)
 
     def add(self, value: object) -> None:
+        """Append ``value`` into the self types."""
         if not isinstance(value, SHVTypeBase):
             raise TypeError("Only instances of SHVTypeBase can be included")
         self._types.append(value)
 
     def discard(self, value: object) -> None:
+        """Remove ``value`` from the self types."""
         if not isinstance(value, SHVTypeBase):
             raise TypeError("Only instances of SHVTypeBase can be included")
         self._types.remove(value)
 
     def update(self, values: typing.Iterable[SHVTypeBase]) -> None:
+        """Add all ``values`` into the self types."""
         for value in values:
             self.add(value)
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return any(tp.validate(value) for tp in self)
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         res = 0
         for tp in self._types:
             if (v := tp.chainpack_bytes()) is None:
@@ -162,7 +171,8 @@ class SHVTypeNull(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls) -> "SHVTypeNull":
+    def __new__(cls) -> SHVTypeNull:
+        """Construct new SHVTypeNull object."""
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -170,14 +180,16 @@ class SHVTypeNull(SHVTypeBase):
     def __init__(self) -> None:
         super().__init__("Null")
 
-    def validate(self, value: object) -> bool:
+    def validate(self, value: object) -> bool:  # noqa PLR6301 TODO
+        """Check that given value matches the described type."""
         return shv.is_shvnull(value)
 
-    def chainpack_bytes(self) -> int | None:
+    def chainpack_bytes(self) -> int | None:  # noqa PLR6301 TODO
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return 1
 
 
-shvNull = SHVTypeNull()  # Must be defined here for reuse not in types_builtins.py
+shvNull = SHVTypeNull()  # noqa N816 Must be defined here for reuse not in types_builtins.py
 
 
 class SHVTypeBool(SHVTypeBase):
@@ -188,7 +200,8 @@ class SHVTypeBool(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls) -> "SHVTypeBool":
+    def __new__(cls) -> SHVTypeBool:
+        """Construct new SHVTypeBool object."""
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -196,14 +209,16 @@ class SHVTypeBool(SHVTypeBase):
     def __init__(self) -> None:
         super().__init__("Bool")
 
-    def validate(self, value: object) -> bool:
+    def validate(self, value: object) -> bool:  # noqa PLR6301 TODO
+        """Check that given value matches the described type."""
         return shv.is_shvbool(value)
 
-    def chainpack_bytes(self) -> int | None:
+    def chainpack_bytes(self) -> int | None:  # noqa PLR6301 TODO
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return 1
 
 
-shvBool = SHVTypeBool()  # Must be defined here for reuse not in types_builtins.py
+shvBool = SHVTypeBool()  # noqa N816 Must be defined here for reuse not in types_builtins.py
 
 
 class SHVTypeInt(SHVTypeBase):
@@ -219,7 +234,8 @@ class SHVTypeInt(SHVTypeBase):
         maximum: int | None = None,
         multiple_of: int | None = None,
         unsigned: bool | None = None,
-    ) -> "SHVTypeInt":
+    ) -> SHVTypeInt:
+        """Construct new SHVTypeInt object."""
         if maximum is None and multiple_of is None:
             if minimum is None:
                 if name == "Int":
@@ -251,15 +267,14 @@ class SHVTypeInt(SHVTypeBase):
             unsigned if unsigned is not None else minimum is not None and minimum >= 0
         )
         if self._unsigned and (
-            self._minimum is not None
-            and self._minimum < 0
-            or self._maximum is not None
-            and self._maximum < 0
+            (self._minimum is not None and self._minimum < 0)
+            or (self._maximum is not None and self._maximum < 0)
         ):
             raise ValueError("Boundaries can't be less than zero for unsigned number")
 
     @property
     def minimum(self) -> int | None:
+        """Return SHVTypeInt's minimum."""
         return self._minimum
 
     @minimum.setter
@@ -270,6 +285,7 @@ class SHVTypeInt(SHVTypeBase):
 
     @property
     def maximum(self) -> int | None:
+        """Return SHVTypeInt's maximum."""
         return self._maximum
 
     @maximum.setter
@@ -280,6 +296,7 @@ class SHVTypeInt(SHVTypeBase):
 
     @property
     def unsigned(self) -> bool:
+        """Return if SHVTypeInt is unsigned."""
         return self._unsigned
 
     @unsigned.setter
@@ -292,6 +309,7 @@ class SHVTypeInt(SHVTypeBase):
         self._unsigned = value
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return (
             isinstance(value, int)
             and (self._minimum is None or self._minimum <= value)
@@ -308,7 +326,7 @@ class SHVTypeInt(SHVTypeBase):
         )
 
     def bytes_size(self) -> int | None:
-        """Number of bytes to be used to cover whole range."""
+        """Return the number of bytes to be used to cover whole range."""
         if (
             self._maximum is None
             or self._minimum is None
@@ -318,6 +336,7 @@ class SHVTypeInt(SHVTypeBase):
         return ((abs(self._maximum - self._minimum).bit_length() - 1) // 8) + 1
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         if self._minimum is not None and self._maximum is not None:
             if self._minimum >= 0 and self._maximum < 64:
                 return 1  # packed in schema
@@ -351,7 +370,8 @@ class SHVTypeDouble(SHVTypeBase):
         exclusive_minimum: decimal.Decimal | None = None,
         exclusive_maximum: decimal.Decimal | None = None,
         multiple_of: decimal.Decimal | None = None,
-    ) -> "SHVTypeDouble":
+    ) -> SHVTypeDouble:
+        """Construct new SHVTypeDouble object."""
         if (
             minimum is None
             and maximum is None
@@ -383,6 +403,7 @@ class SHVTypeDouble(SHVTypeBase):
         self.multiple_of = multiple_of
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return (
             isinstance(value, float)
             and (self.minimum is None or self.minimum <= value)
@@ -402,7 +423,8 @@ class SHVTypeDouble(SHVTypeBase):
             and value.multiple_of == self.multiple_of
         )
 
-    def chainpack_bytes(self) -> int | None:
+    def chainpack_bytes(self) -> int | None:  # noqa PLR6301 TODO
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return 65
 
 
@@ -416,7 +438,8 @@ class SHVTypeDecimal(SHVTypeBase):
         name: str,
         minimum: decimal.Decimal | None = None,
         maximum: decimal.Decimal | None = None,
-    ) -> "SHVTypeDecimal":
+    ) -> SHVTypeDecimal:
+        """Construct new SHVTypeDecimal object."""
         if minimum is None and maximum is None:
             if name == "Decimal":
                 if cls.__obj is None:
@@ -436,6 +459,7 @@ class SHVTypeDecimal(SHVTypeBase):
         self.maximum = maximum
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return (
             isinstance(value, decimal.Decimal)
             and (self.minimum is None or self.minimum <= value)
@@ -446,11 +470,11 @@ class SHVTypeDecimal(SHVTypeBase):
         """Deduce type for mantisa of this decimal type."""
         minimum = None
         if self.minimum is not None:
-            decmin = self.minimum.as_tuple()
+            decmin = self.minimum.as_tuple()  # noqa F841
             # TODO
         maximum = None
         if self.maximum is not None:
-            decmax = self.maximum.as_tuple()
+            decmax = self.maximum.as_tuple()  # noqa F841
             # TODO
         return SHVTypeInt(self.name + "-mantisa", minimum, maximum)
 
@@ -472,6 +496,7 @@ class SHVTypeDecimal(SHVTypeBase):
         )
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         mantisa = self.mantisa().chainpack_bytes()
         exponent = self.exponent().chainpack_bytes()
         if mantisa is not None and exponent is not None:
@@ -490,7 +515,8 @@ class SHVTypeString(SHVTypeBase):
         min_length: int | None = None,
         max_length: int | None = None,
         pattern: str | None = None,
-    ) -> "SHVTypeString":
+    ) -> SHVTypeString:
+        """Construct new SHVTypeString object."""
         if min_length is None and max_length is None and pattern is None:
             if name == "String":
                 if cls.__obj is None:
@@ -514,6 +540,7 @@ class SHVTypeString(SHVTypeBase):
             self._pattern = re.compile(self.pattern)
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return (
             isinstance(value, str)
             and (self.min_length is None or len(value) >= self.min_length)
@@ -530,6 +557,7 @@ class SHVTypeString(SHVTypeBase):
         )
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         # Note: we do not investigate pattern so we consider only maximum length
         # to calculate required bytes.
         if self.max_length is None:
@@ -547,7 +575,8 @@ class SHVTypeBlob(SHVTypeBase):
         name: str,
         min_length: int | None = None,
         max_length: int | None = None,
-    ) -> "SHVTypeBlob":
+    ) -> SHVTypeBlob:
+        """Construct new SHVTypeBlob object."""
         if min_length is None and max_length is None:
             if name == "Blob":
                 if cls.__obj is None:
@@ -567,8 +596,9 @@ class SHVTypeBlob(SHVTypeBase):
         self.max_length = max_length
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return (
-            isinstance(value, (bytes, bytearray))
+            isinstance(value, bytes | bytearray)
             and (self.min_length is None or len(value) >= self.min_length)
             and (self.max_length is None or len(value) <= self.max_length)
         )
@@ -581,6 +611,7 @@ class SHVTypeBlob(SHVTypeBase):
         )
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         if self.max_length is None:
             return None
         return 1 + len(shv.ChainPack.pack_uint_data(self.max_length)) + self.max_length
@@ -591,7 +622,8 @@ class SHVTypeDateTime(SHVTypeBase):
 
     __obj = None
 
-    def __new__(cls) -> "SHVTypeDateTime":
+    def __new__(cls) -> SHVTypeDateTime:
+        """Construct new SHVTypeDateTime object."""
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -599,10 +631,12 @@ class SHVTypeDateTime(SHVTypeBase):
     def __init__(self) -> None:
         super().__init__("DateTime")
 
-    def validate(self, value: object) -> bool:
+    def validate(self, value: object) -> bool:  # noqa PLR6301 TODO
+        """Check that given value matches the described type."""
         return isinstance(value, datetime.datetime)
 
-    def chainpack_bytes(self) -> int | None:
+    def chainpack_bytes(self) -> int | None:  # noqa PLR6301 TODO
+        """Calculate max. number of bytes to represent self in Chainpack."""
         # signed 62 bit int and one byte for schema
         return 9
 
@@ -628,6 +662,7 @@ class SHVTypeEnum(SHVTypeBase, dict[str, int]):
         self.update(kvalues)
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         if isinstance(value, str):
             return value in self.keys()
         if isinstance(value, int):
@@ -639,11 +674,12 @@ class SHVTypeEnum(SHVTypeBase, dict[str, int]):
         return SHVTypeInt(self.name + "-integer", 0, max(self.values()))
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return self.integer().chainpack_bytes()
 
 
 SHVTypeBitfieldCompatible = SHVTypeNull | SHVTypeBool | SHVTypeEnum | SHVTypeInt
-SHVBitfieldCompatible = None | bool | int
+SHVBitfieldCompatible = bool | int | None
 
 
 class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
@@ -665,7 +701,7 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
         self,
         name: str,
         *items: SHVTypeBitfieldCompatible,
-        enum: None | SHVTypeEnum = None,
+        enum: SHVTypeEnum | None = None,
         strict: bool = True,
     ) -> None:
         """Initialize new Bitfield type.
@@ -770,6 +806,7 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
         return sum(self.type_span(tp) or 0 for tp in self)
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         if not isinstance(value, int):
             return False
         try:
@@ -819,6 +856,7 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
         return SHVTypeInt(self.name + "-integer", 0, 2 ** self.bitsize())
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return self.integer().chainpack_bytes()
 
     @staticmethod
@@ -828,7 +866,7 @@ class SHVTypeBitfield(SHVTypeBase, list[SHVTypeBitfieldCompatible]):
         :return: Number of bits needed to carry this type in bitfield or
           ``None`` if that is not supported for this type.
         """
-        if tp in (shvNull, shvBool):
+        if tp in (shvNull, shvBool):  # noqa PLR6201 TODO unhashable
             return 1
         if isinstance(tp, SHVTypeEnum):
             tp = tp.integer()
@@ -864,9 +902,10 @@ class SHVTypeList(SHVTypeBase):
     def __new__(
         cls,
         name: str,
-        *args: typing.Any,
-        **kwargs: typing.Any,
+        *args: typing.Any,  # noqa ANN401
+        **kwargs: typing.Any,  # noqa ANN401
     ) -> SHVTypeList:
+        """Construct new SHVTypeList object."""
         if name == "List":
             if cls.__anylist is None:
                 cls.__anylist = object.__new__(cls)
@@ -879,7 +918,7 @@ class SHVTypeList(SHVTypeBase):
         allowed: SHVTypeBase = shvAny,
         minlen: int = 0,
         maxlen: int | None = None,
-    ):
+    ) -> None:
         """Initialize new List type.
 
         :param name: Name of the new type.
@@ -916,6 +955,7 @@ class SHVTypeList(SHVTypeBase):
         self._allowed = value
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return (
             isinstance(value, collections.abc.Sequence)
             and self.minlen <= len(value)
@@ -924,6 +964,7 @@ class SHVTypeList(SHVTypeBase):
         )
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         if self.maxlen is None or (siz := self.allowed.chainpack_bytes()) is None:
             return None
         return 2 + (self.maxlen * siz)
@@ -940,7 +981,7 @@ class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
     """
 
     def __init__(
-        self, name: str, *items: SHVTypeBase, enum: None | SHVTypeEnum = None
+        self, name: str, *items: SHVTypeBase, enum: SHVTypeEnum | None = None
     ) -> None:
         """Initialize new Tuple type.
 
@@ -959,11 +1000,13 @@ class SHVTypeTuple(SHVTypeBase, list[SHVTypeBase]):
     # TODO allow access through enum names
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return isinstance(value, collections.abc.Sequence) and all(
             i < len(self) and self[i].validate(item) for i, item in enumerate(value)
         )
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         res = 2
         for tp in self:
             if (siz := tp.chainpack_bytes()) is None:
@@ -978,6 +1021,7 @@ class SHVTypeAnyMap(SHVTypeBase):
     __obj = None
 
     def __new__(cls) -> SHVTypeAnyMap:
+        """Construct new SHVTypeAnyMap object."""
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -985,7 +1029,8 @@ class SHVTypeAnyMap(SHVTypeBase):
     def __init__(self) -> None:
         super().__init__("Map")
 
-    def validate(self, value: object) -> bool:
+    def validate(self, value: object) -> bool:  # noqa PLR6301 TODO
+        """Check that given value matches the described type."""
         return isinstance(value, collections.abc.Mapping) and all(
             isinstance(k, str) and shvAny.validate(v) for k, v in value.items()
         )
@@ -994,7 +1039,7 @@ class SHVTypeAnyMap(SHVTypeBase):
 class SHVTypeMap(SHVTypeBase, dict[str, SHVTypeBase]):
     """The SHV Map type with predefined keys."""
 
-    def __init__(self, name: str, **fields: SHVTypeBase):
+    def __init__(self, name: str, **fields: SHVTypeBase) -> None:
         """Initialize new List type.
 
         :param name: Name of the new type.
@@ -1004,11 +1049,13 @@ class SHVTypeMap(SHVTypeBase, dict[str, SHVTypeBase]):
         self.update(fields)
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return isinstance(value, collections.abc.Mapping) and all(
             key in self and self[key].validate(item) for key, item in value.items()
         )
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         res = 2
         for k, tp in self.items():
             if (siz := tp.chainpack_bytes()) is None:
@@ -1023,6 +1070,7 @@ class SHVTypeAnyIMap(SHVTypeBase):
     __obj = None
 
     def __new__(cls) -> SHVTypeAnyIMap:
+        """Construct new SHVTypeAnyIMap object."""
         if cls.__obj is None:
             cls.__obj = object.__new__(cls)
         return cls.__obj
@@ -1030,7 +1078,8 @@ class SHVTypeAnyIMap(SHVTypeBase):
     def __init__(self) -> None:
         super().__init__("IMap")
 
-    def validate(self, value: object) -> bool:
+    def validate(self, value: object) -> bool:  # noqa PLR6301 TODO
+        """Check that given value matches the described type."""
         return isinstance(value, collections.abc.Mapping) and all(
             isinstance(k, int) and shvAny.validate(v) for k, v in value.items()
         )
@@ -1048,7 +1097,7 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
         *fields: SHVTypeBase,
         enum: SHVTypeEnum | None = None,
         **kwfields: SHVTypeBase,
-    ):
+    ) -> None:
         """Initialize new List type.
 
         :param name: Name of the new type.
@@ -1088,16 +1137,18 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
         return len(self._fields)
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         if not isinstance(value, collections.abc.Mapping):
             return False
         for key, item in value.items():
             if self.enum is not None and key in self.enum:
-                key = self.enum[key]
+                key = self.enum[key]  # noqa PLW2901
             if key not in self._fields or not self._fields[key].validate(item):
                 return False
         return True
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         res = 2
         for i, tp in self.items():
             if (siz := tp.chainpack_bytes()) is None:
@@ -1109,7 +1160,7 @@ class SHVTypeIMap(SHVTypeBase, collections.abc.MutableMapping[int | str, SHVType
 class SHVTypeConstant(SHVTypeBase):
     """Type that allows you to specify expected constant."""
 
-    def __init__(self, name: str, value: shv.SHVType = None):
+    def __init__(self, name: str, value: shv.SHVType = None) -> None:
         """Initialize new constant type.
 
         :param name: Name of the new constant.
@@ -1122,7 +1173,9 @@ class SHVTypeConstant(SHVTypeBase):
         return isinstance(other, SHVTypeConstant) and self.value == other.value
 
     def validate(self, value: object) -> bool:
+        """Check that given value matches the described type."""
         return value == self.value
 
     def chainpack_bytes(self) -> int | None:
+        """Calculate max. number of bytes to represent self in Chainpack."""
         return _chainpack_bytes(self.value)

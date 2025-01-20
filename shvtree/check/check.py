@@ -17,7 +17,7 @@ class Checks(enum.Flag):
     """Detect type duplicates and suggest using aliases."""
 
 
-def check(tree: SHVTree, disable: Checks = Checks(0)) -> list[str]:
+def check(tree: SHVTree, disable: Checks | None = None) -> list[str]:
     """Perform checking operations of the provided tree.
 
     This is intended to discover issues that are not of syntax or definition but
@@ -30,6 +30,8 @@ def check(tree: SHVTree, disable: Checks = Checks(0)) -> list[str]:
         checks.
     :returns:
     """
+    if disable is None:
+        disable = Checks(0)
     res = []
     for shvtp in tree.types.values():
         if isinstance(shvtp, SHVTypeOneOf):

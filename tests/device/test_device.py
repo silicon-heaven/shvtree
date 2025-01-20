@@ -19,10 +19,10 @@ class TreeDevice(SHVTreeDevice):
         super().__init__(*args, **kwargs)
         self.prop_boolean = False
 
-    def _serialNumber_get(self):
+    def _serialNumber_get(self):  # noqa N816
         return 42
 
-    async def _hwVersion_get(self):
+    async def _hwVersion_get(self):  # noqa N816
         return "unknown"
 
     def _properties_boolean_get(self) -> bool:

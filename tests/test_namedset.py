@@ -52,14 +52,14 @@ def test_invalid_in(namedset):
 def test_del(namedset):
     assert foos[2] in namedset
     del namedset[foos[2].name]
-    assert set((foo.name for foo in foos if foo is not foos[2])) == set(namedset)
+    assert set(foo.name for foo in foos if foo is not foos[2]) == set(namedset)
 
 
 def test_update(namedset):
     newset = NamedSet()
     assert set(newset) == set()
     newset.update(namedset)
-    assert set((foo.name for foo in foos)) == set(newset)
+    assert set(foo.name for foo in foos) == set(newset)
 
 
 @pytest.mark.parametrize("foo", foos)

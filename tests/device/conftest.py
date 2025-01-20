@@ -11,7 +11,7 @@ def fixture_port(unused_tcp_port_factory):
 
 @pytest.fixture(name="url", scope="module")
 def fixture_url(port):
-    """Provides RpcUrl for connecting to the broker."""
+    """Provide RpcUrl for connecting to the broker."""
     return RpcUrl(
         location="localhost",
         port=3755,
@@ -25,7 +25,7 @@ def fixture_url(port):
 
 @pytest.fixture(name="broker_config", scope="module")
 def fixture_broker_config(url):
-    """Configuration for the broker."""
+    """Provide configuration for the broker."""
     role_admin = RpcBrokerConfig.Role(
         name="admin",
         mount_points={"**"},

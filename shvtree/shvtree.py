@@ -27,7 +27,7 @@ class SHVTree(SHVNode):
         )
         """Access to the types used in the nodes of this tree."""
 
-    def get_type(self, name: str) -> None | SHVTypeBase:
+    def get_type(self, name: str) -> SHVTypeBase | None:
         """Getter of type.
 
         You should use this instead of directly using self.types because those

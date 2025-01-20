@@ -51,7 +51,7 @@ from .types_builtins import (
     shvUInt64,
 )
 
-__all__ = [
+__all__ = [  # noqa RUF022
     "VERSION",
     # shvtree
     "SHVTree",
@@ -108,4 +108,5 @@ __all__ = [
     # named
     "NamedSet",
     "Named",
+    "shvBuiltins",
 ]

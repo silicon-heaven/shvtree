@@ -9,7 +9,7 @@ import typing
 
 import shv
 
-from .. import SHVMethod, SHVNode, SHVTree, SHVTypeInt
+from .. import SHVNode, SHVTree, SHVTypeInt
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +102,10 @@ class SHVTreeDevice(shv.SimpleClient):
             res = await res
         return await self._post_call(args, res)
 
-    async def _pre_call(self, args: dict[str, typing.Any]) -> None:
-        """This method is always called before method implementation is called.
+    async def _pre_call(self, args: dict[str, typing.Any]) -> None:  # noqa PLR6301 TODO
+        """Prepare method implementation call.
+
+        This method is always called before method implementation is called.
 
         The default implementation is to check parameters and raises exception
         in case of a mismatch.
@@ -115,10 +117,12 @@ class SHVTreeDevice(shv.SimpleClient):
         if not args["method"].param.validate(args["param"]):
             raise shv.RpcInvalidParamError("Invalid parameters were provided")
 
-    async def _post_call(
+    async def _post_call(  # noqa PLR6301 TODO
         self, args: dict[str, typing.Any], result: shv.SHVType
     ) -> shv.SHVType:
-        """This method is called after method implementation is called.
+        """Clean-up after method implementation call.
+
+        This method is called after method implementation is called.
 
         The call to this method is not performed in case of exception.
 
@@ -135,7 +139,7 @@ class SHVTreeDevice(shv.SimpleClient):
         tp = args["method"].result
         if not tp.validate(result):
             raise shv.RpcMethodCallExceptionError(
-                f"Implementation produced result of invalid type: {str(result)}."
+                f"Implementation produced result of invalid type: {result!s}."
             )
         if isinstance(tp, SHVTypeInt) and tp.unsigned:
             assert isinstance(result, int)
@@ -201,7 +205,7 @@ class SHVTreeDevice(shv.SimpleClient):
         single parameter with SHV parameters.
         """
 
-        def __init__(self, client: shv.RpcClient, path: str, node: SHVNode):
+        def __init__(self, client: shv.RpcClient, path: str, node: SHVNode) -> None:
             self.__client = client
             self.__path = path
             self.__node = node
@@ -226,7 +230,7 @@ class SHVTreeDevice(shv.SimpleClient):
             return func
 
     def signals(self, path: str) -> Signals:
-        """Provides you with instance of :class:`Signals` for given path."""
+        """Provide you with instance of :class:`Signals` for given path."""
         if self.tree is not None and (node := self.tree.get_node(path)) is not None:
             return self.Signals(self.client, path, node)
         raise ValueError(f"Path '{path}' is not valid in the provided tree.")

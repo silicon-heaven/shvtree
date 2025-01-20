@@ -1,7 +1,6 @@
 import pathlib
 
 import pytest
-import ruamel.yaml
 
 
 @pytest.fixture(name="path_tree1")

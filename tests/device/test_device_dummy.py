@@ -29,7 +29,7 @@ async def fixture_device(broker, url):
 
 async def test_prop_boolean(device, client):
     res = await client.prop_get("test/properties/boolean")
-    assert res in (True, False)
+    assert res in {True, False}
 
 
 async def test_prop_int(device, client):
@@ -58,7 +58,7 @@ async def test_prop_tuple(device, client):
     res = await client.prop_get("test/properties/tuple")
     assert isinstance(res, list)
     assert len(res) == 5
-    assert res[0] in (True, False)
+    assert res[0] in {True, False}
     assert -100 <= res[1] <= 100
     assert 0 <= res[2] <= 100
     assert isinstance(res[3], str) and 0 <= len(res[3]) <= 100
@@ -69,7 +69,7 @@ async def test_prop_map(device, client):
     res = await client.prop_get("test/properties/map")
     assert isinstance(res, dict)
     assert len(res) == 5
-    assert res["boolean"] in (True, False)
+    assert res["boolean"] in {True, False}
     assert -100 <= res["integer"] <= 100
     assert 0 <= res["uinteger"] <= 100
     assert isinstance(res["string"], str) and 0 <= len(res["string"]) <= 100
@@ -80,7 +80,7 @@ async def test_prop_imap(device, client):
     res = await client.prop_get("test/properties/imap")
     assert isinstance(res, dict)
     assert len(res) == 5
-    assert res[0] in (True, False)
+    assert res[0] in {True, False}
     assert -100 <= res[1] <= 100
     assert 0 <= res[2] <= 100
     assert isinstance(res[3], str) and 0 <= len(res[3]) <= 100

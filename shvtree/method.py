@@ -25,11 +25,13 @@ class SHVMethod(namedset.Named):
         name: str,
         param: SHVTypeBase = shvNull,
         result: SHVTypeBase = shvNull,
-        flags: shv.RpcMethodFlags = shv.RpcMethodFlags(0),
+        flags: shv.RpcMethodFlags | None = None,
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.COMMAND,
         description: str = "",
-    ):
-        if name in ("ls", "dir", "lsmod"):
+    ) -> None:
+        if flags is None:
+            flags = shv.RpcMethodFlags(0)
+        if name in {"ls", "dir", "lsmod"}:
             raise ValueError(f"Defining standard method {name} is not allowed")
         super().__init__(name)
         self.param = param
@@ -43,11 +45,13 @@ class SHVMethod(namedset.Named):
         cls,
         name: str,
         dtype: SHVTypeBase,
-        flags: shv.RpcMethodFlags = shv.RpcMethodFlags(0),
+        flags: shv.RpcMethodFlags | None = None,
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.READ,
         description: str = "",
     ) -> SHVMethod:
         """Initialize new method that is signal."""
+        if flags is None:
+            flags = shv.RpcMethodFlags(0)
         nflags = flags | shv.RpcMethodFlags.NOT_CALLABLE
         return cls(name, shvNull, dtype, nflags, access, description)
 
@@ -55,22 +59,26 @@ class SHVMethod(namedset.Named):
     def new_change(
         cls,
         dtype: SHVTypeBase,
-        flags: shv.RpcMethodFlags = shv.RpcMethodFlags(0),
+        flags: shv.RpcMethodFlags | None = None,
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.READ,
         description: str = "",
     ) -> SHVMethod:
         """Initialize new method that is standard change signal."""
+        if flags is None:
+            flags = shv.RpcMethodFlags(0)
         return cls.new_signal("chng", dtype, flags, access, description)
 
     @classmethod
     def new_getter(
         cls,
         dtype: SHVTypeBase,
-        flags: shv.RpcMethodFlags = shv.RpcMethodFlags(0),
+        flags: shv.RpcMethodFlags | None = None,
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.READ,
         description: str = "",
     ) -> SHVMethod:
         """Initialize new method that is standard getter."""
+        if flags is None:
+            flags = shv.RpcMethodFlags(0)
         nflags = flags | shv.RpcMethodFlags.GETTER
         return cls("get", shvGetParam, dtype, nflags, access, description)
 
@@ -78,11 +86,13 @@ class SHVMethod(namedset.Named):
     def new_setter(
         cls,
         dtype: SHVTypeBase,
-        flags: shv.RpcMethodFlags = shv.RpcMethodFlags(0),
+        flags: shv.RpcMethodFlags | None = None,
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.WRITE,
         description: str = "",
     ) -> SHVMethod:
         """Initialize new method that is standard setter."""
+        if flags is None:
+            flags = shv.RpcMethodFlags(0)
         nflags = flags | shv.RpcMethodFlags.SETTER
         return cls("set", dtype, shvNull, nflags, access, description)
 

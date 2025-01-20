@@ -9,7 +9,7 @@ import typing
 class Named:
     """Any class that has read only name attribute."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         """Initialize object and set its name.
 
         :param name: name assigned to the object.
@@ -28,7 +28,7 @@ NamedT = typing.TypeVar("NamedT", bound=Named)
 class NamedSet(collections.abc.Mapping[str, NamedT]):
     """The set of objects that are based on Named class."""
 
-    def __init__(self, *values: NamedT):
+    def __init__(self, *values: NamedT) -> None:
         """Initialize new set of named objects.
 
         :param nset: iterable with objects to be initially added to the set.
@@ -66,9 +66,11 @@ class NamedSet(collections.abc.Mapping[str, NamedT]):
         self.discard(self[key])
 
     def discard(self, value: NamedT) -> None:
+        """Remove ``value`` from self."""
         self.__namedset.remove(value)
 
     def update(self, nset: NamedSet) -> None:
+        """Add all of ``nset`` into the self."""
         for obj in nset.values():
             self.add(obj)
 
