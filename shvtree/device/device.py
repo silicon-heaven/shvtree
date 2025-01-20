@@ -98,7 +98,7 @@ class SHVTreeDevice(shv.SimpleClient):
         impl_param = inspect.signature(impl).parameters
         await self._pre_call(args)
         res = impl(**{key: value for key, value in args.items() if key in impl_param})
-        if asyncio.iscoroutine(res):
+        if res and asyncio.iscoroutine(res):
             res = await res
         return await self._post_call(args, res)
 
@@ -220,7 +220,7 @@ class SHVTreeDevice(shv.SimpleClient):
                 if not method.result.validate(value):
                     raise RuntimeError("Attempting to send signal with invalid value.")
                 await self.__client.send(
-                    shv.RpcMessage.signal(self.__path, attr, value)
+                    shv.RpcMessage.signal(path=self.__path, name=attr, value=value)
                 )
 
             return func

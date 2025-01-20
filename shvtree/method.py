@@ -29,7 +29,7 @@ class SHVMethod(namedset.Named):
         access: shv.RpcMethodAccess = shv.RpcMethodAccess.COMMAND,
         description: str = "",
     ):
-        if name in ("ls", "dir", "lschng"):
+        if name in ("ls", "dir", "lsmod"):
             raise ValueError(f"Defining standard method {name} is not allowed")
         super().__init__(name)
         self.param = param

@@ -1,10 +1,10 @@
 {
-	"nodes": {
-		"one": {
-			"nodes": {
-				"subone": {}
-			}
-		},
-		"two": {}
-	}
+    "nodes": {
+        "one": {
+            "nodes": {
+                "subone": {}
+            }
+        },
+        "two": {}
+    }
 }
