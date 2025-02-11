@@ -1,5 +1,5 @@
 import pytest
-from shv import RpcLogin, RpcLoginType, RpcMethodAccess, RpcUrl, ValueClient
+from shv import RpcLogin, RpcLoginType, RpcMethodAccess, RpcUrl, SHVValueClient
 from shv.broker import RpcBroker, RpcBrokerConfig
 
 
@@ -57,6 +57,6 @@ async def fixture_broker(broker_config):
 
 @pytest.fixture(name="client")
 async def fixture_client(broker, url):
-    client = await ValueClient.connect(url)
+    client = await SHVValueClient.connect(url)
     yield client
     await client.disconnect()

@@ -112,8 +112,8 @@ class SHVMethod(namedset.Named):
         return shv.RpcMethodDesc(
             name=self.name,
             flags=self.flags,
-            param=self.param.name or "Null",
-            result=self.result.name or "Null",
+            param=self.param.name or "n",
+            result=self.result.name or "n",
             access=self.access,
             extra={"description": self.description},
         )

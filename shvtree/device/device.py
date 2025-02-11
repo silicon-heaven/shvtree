@@ -14,7 +14,7 @@ from .. import SHVNode, SHVTree, SHVTypeInt
 logger = logging.getLogger(__name__)
 
 
-class SHVTreeDevice(shv.SimpleClient):
+class SHVTreeDevice(shv.SHVClient):
     """The SHV device that can respond on RPC requests based on given tree.
 
     The usage is very simple. You have to implement your own class that inherits
@@ -62,39 +62,30 @@ class SHVTreeDevice(shv.SimpleClient):
                 yield shv.RpcMethodDesc(
                     name="desc",
                     flags=flags,
-                    param="Null",
-                    result="String",
+                    param="n",
+                    result="s",
                     access=shv.RpcMethodAccess.BROWSE,
                 )
 
-    async def _method_call(
-        self,
-        path: str,
-        method: str,
-        param: shv.SHVType,
-        access: shv.RpcMethodAccess,
-        user_id: str | None,
-    ) -> shv.SHVType:
+    async def _method_call(self, req: shv.SHVBase.Request) -> shv.SHVType:
         args = {
-            "path": path,
-            "node_name": path.split("/")[-1],
-            "method_name": method,
-            "method_path": f"{path}:{method}",
-            "access": access,
-            "param": param,
-            "user_id": user_id,
+            "path": req.path,
+            "node_name": req.path.split("/")[-1],
+            "method_name": req.method,
+            "method_path": f"{req.path}:{req.method}",
+            "access": req.access,
+            "param": req.param,
+            "user_id": req.user_id,
         }
         impl = self._get_method_impl(args)
         if impl is None:
             if (
-                method == "desc"
+                req.method == "desc"
                 and isinstance(node := args.get("node"), SHVNode)
                 and node.description
             ):
                 return node.description.strip()
-            return await super()._method_call(
-                path=path, method=method, param=param, access=access, user_id=user_id
-            )
+            return await super()._method_call(req)
         impl_param = inspect.signature(impl).parameters
         await self._pre_call(args)
         res = impl(**{key: value for key, value in args.items() if key in impl_param})

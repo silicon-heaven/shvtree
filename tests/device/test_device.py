@@ -123,11 +123,11 @@ async def test_empty_ls_invalid(empty_device, client):
             [RpcMethodDesc.stddir(), RpcMethodDesc.stdls()]
             + (
                 [
-                    RpcMethodDesc.getter("shvVersionMajor", param="Null", result="Int"),
-                    RpcMethodDesc.getter("shvVersionMinor", param="Null", result="Int"),
-                    RpcMethodDesc.getter("name", param="Null", result="String"),
-                    RpcMethodDesc.getter("version", param="Null", result="String"),
-                    RpcMethodDesc.getter("date", "Null", "DateTime"),
+                    RpcMethodDesc.getter("shvVersionMajor", param="n", result="i"),
+                    RpcMethodDesc.getter("shvVersionMinor", param="n", result="i"),
+                    RpcMethodDesc.getter("name", param="n", result="s"),
+                    RpcMethodDesc.getter("version", param="n", result="s"),
+                    RpcMethodDesc.getter("date", "n", "t"),
                     RpcMethodDesc("ping"),
                 ]
                 if path == ".app"
@@ -138,8 +138,8 @@ async def test_empty_ls_invalid(empty_device, client):
                 [
                     RpcMethodDesc.getter(
                         "desc",
-                        param="Null",
-                        result="String",
+                        param="n",
+                        result="s",
                         access=shv.RpcMethodAccess.BROWSE,
                     )
                 ]
