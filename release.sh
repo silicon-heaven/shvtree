@@ -80,7 +80,7 @@ if ! in_ci; then
 		esac
 	done
 
-	{ python3 -m build && twine check build/*; } || {
+	{ python3 -m build && twine check dist/*; } || {
 		git reset --merge HEAD^
 		fail "Invalid pypi release"
 	}
