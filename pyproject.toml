@@ -21,7 +21,7 @@ dependencies = [
 [project.urls]
 source = "https://gitlab.com/silicon-heaven/shvtree"
 changelog = "https://gitlab.com/silicon-heaven/shvtree/-/blob/master/CHANGELOG.md"
-issues = "ttps://gitlab.com/silicon-heaven/shvtree/-/issues"
+issues = "https://gitlab.com/silicon-heaven/shvtree/-/issues"
 
 [project.optional-dependencies]
 test = [
