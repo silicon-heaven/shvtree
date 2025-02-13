@@ -13,7 +13,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-  "pyshv>=0.8",
+  "pyshv~=0.8.0",
   "ruamel.yaml",
   "asyncinotify",
 ]

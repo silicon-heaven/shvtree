@@ -24,7 +24,7 @@
 
     pypi2nix = list: pypkgs:
       attrValues (getAttrs (map (n: let
-          pyname = head (match "([^ =<>;]*).*" n);
+          pyname = head (match "([^ =<>;~]*).*" n);
           pymap = {
             "ruamel.yaml" = "ruamel-yaml";
           };
